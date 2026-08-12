@@ -91,9 +91,36 @@ records and non-overwriting output allocation. The native candidate/mask/CAM
 adapter is exercised by the unit-test fixtures without reading the large server
 cache.
 
+After filling an ignored local config with the registered first-paper Train
+cache paths, a real-cache pilot can be run with bounded inputs:
+
+```powershell
+python scripts/run_region_probe.py `
+  --config configs/region_probe_v0.local.yaml `
+  --limit-images 5 `
+  --max-regions-per-class 50 `
+  --allow-partial-classes
+```
+
+Pilot runs are always recorded as `pilot_native_region` with
+`scientific_evidence=false`. The registered formal command has no pilot
+overrides:
+
+```powershell
+python scripts/run_region_probe.py `
+  --config configs/region_probe_v0.local.yaml
+```
+
+Formal evidence is accepted only when the resolved config matches the committed
+protocol and the loader validates all 2,522 Train image bundles, all 270,641
+candidates, the registered per-class counts, 1,000 selected records per class,
+and unchanged source-file stat inventories.
+
 ## Results
 
-Each run contains resolved config, environment, input manifest, full prompt bank and class map, CSV/JSON metrics, plots, and `run.log`. The project-level status report is `reports/ov_probe_v0_report.md`. Interpret expanded-vocabulary ranking only as semantic selectivity: it is not unseen-class segmentation.
+Each run contains resolved config, environment, input manifest, full prompt bank and class map, CSV/JSON metrics, plots, and `run.log`. The completed E0.1–E0.5 report is
+`reports/ov_probe_stage0_complete_20260812.md`. Interpret expanded-vocabulary
+ranking only as semantic selectivity: it is not unseen-class segmentation.
 
 Region dry runs are written under `outputs/region_probe_v0/run_*` and additionally
 contain `validated_region_input.json`, `selected_region_records.jsonl`,

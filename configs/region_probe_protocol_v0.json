@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "dataset": "LoveDA",
+  "split": "train",
+  "candidate_subset": "all_train_candidates",
+  "direct_pixel_gt_used": false,
+  "love_da_val_used": false,
+  "oracle_used": false,
+  "e2_used": false,
+  "selection_used_gt": false,
+  "selection_used_text_prediction": false,
+  "uses_gt_derived_image_tags": true,
+  "image_level_weak_tag_origin": "LoveDA Train pixel-mask presence simulation with a >=16-pixel threshold in the first-paper protocol",
+  "selection_scope_note": "No pixel GT is opened by this Stage 0 adapter; all candidates are loaded before seed-42 sampling by SAM3 source class.",
+  "label_derivations": {
+    "sam3_source": "sam3_candidate_source_class",
+    "cam": "cam_mask_mean_top1"
+  },
+  "feature_source": {
+    "array": "region_features",
+    "model_name": "ViT-B-32",
+    "checkpoint_sha256": "60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4",
+    "feature_dimension": 512,
+    "stored_dtype": "float16",
+    "view_fusion": "normalized mean of context and mask-emphasized features"
+  },
+  "forbidden_as_labels": [
+    "region scores",
+    "predicted_class_ids",
+    "RemoteCLIP text predictions",
+    "visual prototype predictions",
+    "reconciliation outputs",
+    "pseudo-labels",
+    "E2 oracle",
+    "pixel GT"
+  ]
+}

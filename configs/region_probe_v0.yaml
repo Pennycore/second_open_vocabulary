@@ -1,0 +1,87 @@
+experiment:
+  name: region_probe_v0
+  seed: 42
+  overwrite: false
+
+paths:
+  # Fill these only in an ignored configs/region_probe_v0.local.yaml.
+  source_project_root: null
+  remoteclip_checkpoint: null
+  text_feature_cache: null
+  region_feature_cache: null
+  candidate_cache_dir: null
+  cam_cache_dir: null
+  region_provenance_file: configs/region_probe_protocol_v0.json
+  output_root: outputs/region_probe_v0
+
+model:
+  model_name: ViT-B-32
+  feature_dim: 512
+  device: auto
+  normalize_features: true
+
+data:
+  dataset_name: LoveDA
+  split: train
+  use_validation_set: false
+  allow_pixel_gt: false
+  allow_oracle: false
+  require_provenance: true
+  classes:
+    - {id: 1, name: building}
+    - {id: 2, name: road}
+    - {id: 3, name: water}
+    - {id: 4, name: barren}
+    - {id: 5, name: forest}
+    - {id: 6, name: agriculture}
+
+region_input:
+  cam_method: mean
+  require_all_pairs: true
+  require_all_classes: true
+  limit_images: null
+  max_regions_per_class: 1000
+  sampling_reference: sam3_source_class
+
+prompts:
+  group_a_templates:
+    - "{class}"
+    - "a photo of {class}"
+    - "an aerial image of {class}"
+    - "a satellite image of {class}"
+    - "a remote sensing image of {class}"
+    - "{class} in an aerial image"
+    - "{class} in a satellite image"
+    - "a region of {class} viewed from above"
+  group_b_templates:
+    - "{alias}"
+    - "an aerial image of {alias}"
+    - "a remote sensing image of {alias}"
+  aliases:
+    building: [building, buildings, built-up area, urban structures]
+    road: [road, roads, street, paved road]
+    water: [water, water body, river or lake]
+    barren: [barren land, bare soil, exposed ground]
+    forest: [forest, woodland, dense tree-covered area]
+    agriculture: [agriculture, agricultural land, cropland, farmland, cultivated field]
+  distractors:
+    - airport
+    - bridge
+    - railway
+    - parking lot
+    - ship
+    - wetland
+    - grassland
+    - industrial area
+    - residential area
+    - sports field
+    - mountain
+    - sand
+    - snow
+    - cloud
+    - vehicle
+
+evaluation:
+  logsumexp_temperature: 0.07
+  vocabularies: [closed, expanded]
+  region_sample_per_class: null

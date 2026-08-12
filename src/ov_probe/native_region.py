@@ -117,6 +117,13 @@ def _configured_id_to_name(cfg: dict[str, Any]) -> dict[int, str]:
     return {int(item["id"]): str(item["name"]) for item in cfg["data"]["classes"]}
 
 
+def _canonical_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _validated_registered_scope(
     manifest: dict[str, Any], cfg: dict[str, Any]
 ) -> dict[str, Any]:
@@ -148,12 +155,17 @@ def _validated_registered_scope(
         "require_all_classes": True,
         "cam_method": "mean",
         "sampling_reference": "sam3_source_class",
+        "normalize_features": True,
     }
     for key, expected in expected_literals.items():
         if scope.get(key) != expected:
             raise InputValidationError(
                 f"Registered scope must declare {key}={expected!r}."
             )
+    for key in ("prompt_config_sha256", "evaluation_config_sha256"):
+        value = str(scope.get(key, ""))
+        if not re.fullmatch(r"[0-9a-f]{64}", value):
+            raise InputValidationError(f"Registered scope has an invalid {key}.")
     return {
         **scope,
         "expected_image_count": expected_images,
@@ -183,6 +195,9 @@ def is_registered_region_scope(
         and int(options.get("max_regions_per_class", -1))
         == scope["max_regions_per_class"]
         and int(cfg["experiment"]["seed"]) == scope["seed"]
+        and cfg["model"].get("normalize_features") is scope["normalize_features"]
+        and _canonical_sha256(cfg.get("prompts")) == scope["prompt_config_sha256"]
+        and _canonical_sha256(cfg.get("evaluation")) == scope["evaluation_config_sha256"]
     )
 
 

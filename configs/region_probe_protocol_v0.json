@@ -29,7 +29,10 @@
     "require_all_classes": true,
     "cam_method": "mean",
     "sampling_reference": "sam3_source_class",
-    "max_regions_per_class": 1000
+    "max_regions_per_class": 1000,
+    "normalize_features": true,
+    "prompt_config_sha256": "42056e3a4b06e333ff1f750648b9301d07d72b21e11f7b2fe801d76f3e2a41d2",
+    "evaluation_config_sha256": "c6ca1a0df9ff035104fd886c0af047917e6fad0af8aff515fcd0a9e3a52161ad"
   },
   "label_derivations": {
     "sam3_source": "sam3_candidate_source_class",

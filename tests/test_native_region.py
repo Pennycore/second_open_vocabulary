@@ -60,6 +60,9 @@ def _write_protocol(path: Path, checkpoint: Path, *, text_selection: bool = Fals
             "cam_method": "mean",
             "sampling_reference": "sam3_source_class",
             "max_regions_per_class": 1000,
+            "normalize_features": True,
+            "prompt_config_sha256": "42056e3a4b06e333ff1f750648b9301d07d72b21e11f7b2fe801d76f3e2a41d2",
+            "evaluation_config_sha256": "c6ca1a0df9ff035104fd886c0af047917e6fad0af8aff515fcd0a9e3a52161ad",
         },
         "feature_source": {
             "array": "region_features",
@@ -214,6 +217,9 @@ def test_registered_scope_is_computed_from_resolved_config(tmp_path):
     assert is_registered_region_scope(cfg, manifest) is False
     cfg["region_input"]["limit_images"] = None
     cfg["region_input"]["max_regions_per_class"] = 50
+    assert is_registered_region_scope(cfg, manifest) is False
+    cfg["region_input"]["max_regions_per_class"] = 1000
+    cfg["evaluation"]["region_sample_per_class"] = 25
     assert is_registered_region_scope(cfg, manifest) is False
 
 

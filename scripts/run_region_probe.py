@@ -148,8 +148,40 @@ def main() -> int:
         action="store_true",
         help="Use a tiny deterministic synthetic bundle; never scientific evidence.",
     )
+    parser.add_argument(
+        "--limit-images",
+        type=int,
+        help="Pilot-only deterministic prefix limit; omit for the registered formal run.",
+    )
+    parser.add_argument(
+        "--max-regions-per-class",
+        type=int,
+        help="Override the seeded per-source-class reservoir cap for a pilot run.",
+    )
+    parser.add_argument(
+        "--allow-partial-classes",
+        action="store_true",
+        help="Pilot-only: do not require all six source classes in the selected images.",
+    )
     args = parser.parse_args()
+    if args.limit_images is not None and args.limit_images <= 0:
+        parser.error("--limit-images must be positive")
+    if args.max_regions_per_class is not None and args.max_regions_per_class <= 0:
+        parser.error("--max-regions-per-class must be positive")
+    has_pilot_override = bool(
+        args.limit_images is not None
+        or args.max_regions_per_class is not None
+        or args.allow_partial_classes
+    )
+    if args.dry_run and has_pilot_override:
+        parser.error("Pilot overrides cannot be combined with --dry-run")
     cfg = load_config(args.config, PROJECT_ROOT)
+    if args.limit_images is not None:
+        cfg["region_input"]["limit_images"] = args.limit_images
+    if args.max_regions_per_class is not None:
+        cfg["region_input"]["max_regions_per_class"] = args.max_regions_per_class
+    if args.allow_partial_classes:
+        cfg["region_input"]["require_all_classes"] = False
     if not str(cfg["experiment"]["name"]).startswith("region_probe_"):
         raise ValueError("The region runner requires an experiment.name beginning with region_probe_.")
     seed_everything(int(cfg["experiment"]["seed"]))
@@ -159,6 +191,7 @@ def main() -> int:
     (run_dir / "environment.txt").write_text(environment_text(), encoding="utf-8")
     manifest = build_input_manifest(cfg)
     manifest["run_mode"] = "synthetic_dry_run" if args.dry_run else "formal_native_region"
+    manifest["registered_formal_scope"] = bool(not args.dry_run and not has_pilot_override)
     write_json(run_dir / "input_manifest.json", manifest)
     bank = build_prompt_bank(cfg)
     write_json(run_dir / "prompt_bank.json", bank)
@@ -210,6 +243,12 @@ def main() -> int:
         summary = {
             "status": "completed",
             "scientific_evidence": scientific,
+            "registered_formal_scope": bool(scientific and not has_pilot_override),
+            "execution_scope": {
+                "limit_images": cfg["region_input"].get("limit_images"),
+                "max_regions_per_class": cfg["region_input"].get("max_regions_per_class"),
+                "require_all_classes": cfg["region_input"].get("require_all_classes"),
+            },
             "synthetic_dry_run": bool(args.dry_run),
             "input_readiness": readiness,
             "region": compact_region_results(results),

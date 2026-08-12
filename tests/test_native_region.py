@@ -9,6 +9,7 @@ import yaml
 from ov_probe.io import InputValidationError, load_config, load_region_bundle
 from ov_probe.native_region import (
     candidate_cache_fingerprint,
+    discover_native_region_ids,
     load_native_region_directory,
 )
 
@@ -175,6 +176,23 @@ def test_native_region_join_recomputes_independent_labels(tmp_path):
         {"image_id": "loveda_train_rural_0001", "candidate_index": 0},
         {"image_id": "loveda_train_rural_0001", "candidate_index": 1},
     ]
+
+
+def test_discovery_ignores_summary_and_prototype_artifacts(tmp_path):
+    cfg, _, region_dir, _, _, image_id = _write_native_fixture(tmp_path)
+    del cfg
+    (region_dir / "summary.json").write_text("{}", encoding="utf-8")
+    (region_dir / "visual_prototypes.json").write_text("{}", encoding="utf-8")
+    np.savez_compressed(region_dir / "visual_prototypes.npz", prototypes=np.zeros((6, 512)))
+    assert discover_native_region_ids(region_dir, require_all_pairs=True) == [image_id]
+
+
+def test_discovery_rejects_orphan_loveda_train_record(tmp_path):
+    cfg, _, region_dir, _, _, _ = _write_native_fixture(tmp_path)
+    del cfg
+    (region_dir / "loveda_train_urban_orphan.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(InputValidationError, match="orphan companions"):
+        discover_native_region_ids(region_dir, require_all_pairs=True)
 
 
 def test_candidate_fingerprint_mismatch_is_rejected(tmp_path):

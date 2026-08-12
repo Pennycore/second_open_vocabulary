@@ -14,6 +14,7 @@ from .io import FeatureBundle, InputValidationError, sha256_file
 
 
 _FORBIDDEN_PATH_TOKEN = re.compile(r"(?:^|[_-])(val|validation|oracle)(?:[_-]|$)")
+_LOVEDA_TRAIN_IMAGE_ID = re.compile(r"^loveda_train_(?:rural|urban)_.+$")
 
 
 @dataclass(frozen=True)
@@ -527,8 +528,20 @@ def mean_cam_prediction(
 
 def discover_native_region_ids(region_dir: str | Path, require_all_pairs: bool = True) -> list[str]:
     root = Path(region_dir)
-    json_ids = {path.stem for path in root.glob("*.json") if path.is_file()}
-    npz_ids = {path.stem for path in root.glob("*.npz") if path.is_file()}
+    # The first-paper run directory also contains summary.json and the
+    # visual_prototypes JSON/NPZ pair.  Only registered LoveDA Train image
+    # identifiers are native region records; treating every stem as an image
+    # either creates a false orphan or evaluates a calibration artifact.
+    json_ids = {
+        path.stem
+        for path in root.glob("loveda_train_*.json")
+        if path.is_file() and _LOVEDA_TRAIN_IMAGE_ID.fullmatch(path.stem)
+    }
+    npz_ids = {
+        path.stem
+        for path in root.glob("loveda_train_*.npz")
+        if path.is_file() and _LOVEDA_TRAIN_IMAGE_ID.fullmatch(path.stem)
+    }
     if require_all_pairs and json_ids != npz_ids:
         missing_npz = sorted(json_ids - npz_ids)[:5]
         missing_json = sorted(npz_ids - json_ids)[:5]

@@ -12,6 +12,25 @@
   "uses_gt_derived_image_tags": true,
   "image_level_weak_tag_origin": "LoveDA Train pixel-mask presence simulation with a >=16-pixel threshold in the first-paper protocol",
   "selection_scope_note": "No pixel GT is opened by this Stage 0 adapter; all candidates are loaded before seed-42 sampling by SAM3 source class.",
+  "registered_scope": {
+    "expected_image_count": 2522,
+    "expected_candidate_count": 270641,
+    "expected_source_counts": {
+      "building": 88737,
+      "road": 48614,
+      "water": 17279,
+      "barren": 11574,
+      "forest": 25802,
+      "agriculture": 78635
+    },
+    "seed": 42,
+    "limit_images": null,
+    "require_all_pairs": true,
+    "require_all_classes": true,
+    "cam_method": "mean",
+    "sampling_reference": "sam3_source_class",
+    "max_regions_per_class": 1000
+  },
   "label_derivations": {
     "sam3_source": "sam3_candidate_source_class",
     "cam": "cam_mask_mean_top1"

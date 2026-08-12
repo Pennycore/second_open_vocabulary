@@ -27,6 +27,7 @@ from ov_probe.io import (  # noqa: E402
 from ov_probe.metrics import l2_normalize  # noqa: E402
 from ov_probe.native_region import (  # noqa: E402
     inspect_native_region_inputs,
+    is_registered_region_scope,
     load_native_region_directory,
 )
 from ov_probe.probe import run_region_probe  # noqa: E402
@@ -182,6 +183,9 @@ def main() -> int:
         cfg["region_input"]["max_regions_per_class"] = args.max_regions_per_class
     if args.allow_partial_classes:
         cfg["region_input"]["require_all_classes"] = False
+    registered_formal_scope = bool(
+        not args.dry_run and is_registered_region_scope(cfg)
+    )
     if not str(cfg["experiment"]["name"]).startswith("region_probe_"):
         raise ValueError("The region runner requires an experiment.name beginning with region_probe_.")
     seed_everything(int(cfg["experiment"]["seed"]))
@@ -190,8 +194,14 @@ def main() -> int:
     write_yaml(run_dir / "config_resolved.yaml", cfg)
     (run_dir / "environment.txt").write_text(environment_text(), encoding="utf-8")
     manifest = build_input_manifest(cfg)
-    manifest["run_mode"] = "synthetic_dry_run" if args.dry_run else "formal_native_region"
-    manifest["registered_formal_scope"] = bool(not args.dry_run and not has_pilot_override)
+    manifest["run_mode"] = (
+        "synthetic_dry_run"
+        if args.dry_run
+        else "formal_native_region"
+        if registered_formal_scope
+        else "pilot_native_region"
+    )
+    manifest["registered_formal_scope"] = registered_formal_scope
     write_json(run_dir / "input_manifest.json", manifest)
     bank = build_prompt_bank(cfg)
     write_json(run_dir / "prompt_bank.json", bank)
@@ -234,7 +244,7 @@ def main() -> int:
                 return 2
             bundle = load_native_region_directory(cfg)
             encoder = CachedTextEncoder(text_cache, cfg)
-            scientific = True
+            scientific = registered_formal_scope
         results = run_region_probe(bundle, encoder, bank, cfg)
         write_json(run_dir / "region_level_results.json", results)
         write_json(run_dir / "validated_region_input.json", bundle.metadata)
@@ -243,7 +253,8 @@ def main() -> int:
         summary = {
             "status": "completed",
             "scientific_evidence": scientific,
-            "registered_formal_scope": bool(scientific and not has_pilot_override),
+            "registered_formal_scope": registered_formal_scope,
+            "input_data_kind": "synthetic" if args.dry_run else "real_first_paper_cache",
             "execution_scope": {
                 "limit_images": cfg["region_input"].get("limit_images"),
                 "max_regions_per_class": cfg["region_input"].get("max_regions_per_class"),
@@ -261,6 +272,8 @@ def main() -> int:
                 "Expanded-vocabulary ranking is not unseen-class segmentation.",
                 "Synthetic dry-run metrics are never scientific evidence."
                 if args.dry_run
+                else "Real-cache pilot metrics are engineering checks, not registered scientific evidence."
+                if not registered_formal_scope
                 else "The inherited image-level weak tags were simulated from LoveDA Train masks.",
             ],
         }

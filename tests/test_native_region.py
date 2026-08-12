@@ -10,6 +10,7 @@ from ov_probe.io import InputValidationError, load_config, load_region_bundle
 from ov_probe.native_region import (
     candidate_cache_fingerprint,
     discover_native_region_ids,
+    is_registered_region_scope,
     load_native_region_directory,
 )
 
@@ -40,6 +41,25 @@ def _write_protocol(path: Path, checkpoint: Path, *, text_selection: bool = Fals
         "label_derivations": {
             "sam3_source": "sam3_candidate_source_class",
             "cam": "cam_mask_mean_top1",
+        },
+        "registered_scope": {
+            "expected_image_count": 2522,
+            "expected_candidate_count": 270641,
+            "expected_source_counts": {
+                "building": 88737,
+                "road": 48614,
+                "water": 17279,
+                "barren": 11574,
+                "forest": 25802,
+                "agriculture": 78635,
+            },
+            "seed": 42,
+            "limit_images": None,
+            "require_all_pairs": True,
+            "require_all_classes": True,
+            "cam_method": "mean",
+            "sampling_reference": "sam3_source_class",
+            "max_regions_per_class": 1000,
         },
         "feature_source": {
             "array": "region_features",
@@ -176,6 +196,25 @@ def test_native_region_join_recomputes_independent_labels(tmp_path):
         {"image_id": "loveda_train_rural_0001", "candidate_index": 0},
         {"image_id": "loveda_train_rural_0001", "candidate_index": 1},
     ]
+
+
+def test_registered_scope_is_computed_from_resolved_config(tmp_path):
+    cfg, _, _, _, protocol, _ = _write_native_fixture(tmp_path)
+    manifest = json.loads(protocol.read_text(encoding="utf-8"))
+    cfg["region_input"].update({
+        "limit_images": None,
+        "require_all_pairs": True,
+        "require_all_classes": True,
+        "cam_method": "mean",
+        "sampling_reference": "sam3_source_class",
+        "max_regions_per_class": 1000,
+    })
+    assert is_registered_region_scope(cfg, manifest) is True
+    cfg["region_input"]["limit_images"] = 5
+    assert is_registered_region_scope(cfg, manifest) is False
+    cfg["region_input"]["limit_images"] = None
+    cfg["region_input"]["max_regions_per_class"] = 50
+    assert is_registered_region_scope(cfg, manifest) is False
 
 
 def test_discovery_ignores_summary_and_prototype_artifacts(tmp_path):

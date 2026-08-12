@@ -117,6 +117,75 @@ def _configured_id_to_name(cfg: dict[str, Any]) -> dict[int, str]:
     return {int(item["id"]): str(item["name"]) for item in cfg["data"]["classes"]}
 
 
+def _validated_registered_scope(
+    manifest: dict[str, Any], cfg: dict[str, Any]
+) -> dict[str, Any]:
+    scope = manifest.get("registered_scope")
+    if not isinstance(scope, dict):
+        raise InputValidationError("Region protocol lacks a registered_scope object.")
+    class_names = [str(item["name"]) for item in cfg["data"]["classes"]]
+    source_counts = scope.get("expected_source_counts")
+    if not isinstance(source_counts, dict) or set(source_counts) != set(class_names):
+        raise InputValidationError(
+            "registered_scope.expected_source_counts must name every configured class exactly."
+        )
+    normalized_counts = {name: int(source_counts[name]) for name in class_names}
+    if any(value <= 0 for value in normalized_counts.values()):
+        raise InputValidationError("Registered source counts must all be positive.")
+    expected_images = int(scope.get("expected_image_count", 0))
+    expected_candidates = int(scope.get("expected_candidate_count", 0))
+    registered_cap = int(scope.get("max_regions_per_class", 0))
+    if expected_images <= 0 or expected_candidates <= 0 or registered_cap <= 0:
+        raise InputValidationError("Registered scope counts and sampling cap must be positive.")
+    if sum(normalized_counts.values()) != expected_candidates:
+        raise InputValidationError(
+            "Registered per-class source counts do not sum to expected_candidate_count."
+        )
+    if scope.get("limit_images", "missing") is not None:
+        raise InputValidationError("Registered scope must declare limit_images=null.")
+    expected_literals = {
+        "require_all_pairs": True,
+        "require_all_classes": True,
+        "cam_method": "mean",
+        "sampling_reference": "sam3_source_class",
+    }
+    for key, expected in expected_literals.items():
+        if scope.get(key) != expected:
+            raise InputValidationError(
+                f"Registered scope must declare {key}={expected!r}."
+            )
+    return {
+        **scope,
+        "expected_image_count": expected_images,
+        "expected_candidate_count": expected_candidates,
+        "expected_source_counts": normalized_counts,
+        "seed": int(scope.get("seed", -1)),
+        "max_regions_per_class": registered_cap,
+    }
+
+
+def is_registered_region_scope(
+    cfg: dict[str, Any], manifest: dict[str, Any] | None = None
+) -> bool:
+    if manifest is None:
+        value = cfg["paths"].get("region_provenance_file")
+        if not value:
+            raise InputValidationError("paths.region_provenance_file is required.")
+        manifest = _read_json_object(Path(value))
+    scope = _validated_registered_scope(manifest, cfg)
+    options = cfg.get("region_input", {})
+    return bool(
+        options.get("limit_images") is None
+        and options.get("require_all_pairs") is True
+        and options.get("require_all_classes") is True
+        and options.get("cam_method") == scope["cam_method"]
+        and options.get("sampling_reference") == scope["sampling_reference"]
+        and int(options.get("max_regions_per_class", -1))
+        == scope["max_regions_per_class"]
+        and int(cfg["experiment"]["seed"]) == scope["seed"]
+    )
+
+
 def load_region_protocol_manifest(cfg: dict[str, Any]) -> dict[str, Any]:
     value = cfg["paths"].get("region_provenance_file")
     if not value:
@@ -161,6 +230,7 @@ def load_region_protocol_manifest(cfg: dict[str, Any]) -> dict[str, Any]:
         raise InputValidationError(
             "Region labels must be independently derived from SAM3 candidate source and CAM mask mean top1."
         )
+    registered_scope = _validated_registered_scope(manifest, cfg)
     feature_source = manifest.get("feature_source")
     if not isinstance(feature_source, dict):
         raise InputValidationError("Region protocol lacks feature_source metadata.")
@@ -180,6 +250,7 @@ def load_region_protocol_manifest(cfg: dict[str, Any]) -> dict[str, Any]:
         raise InputValidationError("Region protocol checkpoint SHA-256 differs from the configured checkpoint.")
     return {
         **manifest,
+        "registered_scope": registered_scope,
         "path": str(path.resolve()),
         "sha256": sha256_file(path),
         "validated_checkpoint_sha256": checkpoint_sha,
@@ -555,6 +626,66 @@ def discover_native_region_ids(region_dir: str | Path, require_all_pairs: bool =
     return image_ids
 
 
+def discover_native_input_ids(
+    region_dir: str | Path,
+    candidate_dir: str | Path,
+    cam_dir: str | Path,
+    require_all_pairs: bool = True,
+) -> list[str]:
+    region_ids = set(discover_native_region_ids(region_dir, require_all_pairs))
+    candidate_root = Path(candidate_dir)
+    cam_root = Path(cam_dir)
+    candidate_json_ids = {
+        path.stem
+        for path in candidate_root.glob("loveda_train_*.json")
+        if path.is_file() and _LOVEDA_TRAIN_IMAGE_ID.fullmatch(path.stem)
+    }
+    candidate_npz_ids = {
+        path.stem
+        for path in candidate_root.glob("loveda_train_*.npz")
+        if path.is_file() and _LOVEDA_TRAIN_IMAGE_ID.fullmatch(path.stem)
+    }
+    if candidate_json_ids != candidate_npz_ids:
+        raise InputValidationError("Candidate directory contains orphan LoveDA Train companions.")
+    candidate_ids = candidate_json_ids
+    cam_ids = {
+        path.stem
+        for path in cam_root.glob("loveda_train_*.npz")
+        if path.is_file() and _LOVEDA_TRAIN_IMAGE_ID.fullmatch(path.stem)
+    }
+    if region_ids != candidate_ids or region_ids != cam_ids:
+        raise InputValidationError(
+            "Region, candidate, and CAM LoveDA Train image-ID sets are not identical."
+        )
+    return sorted(region_ids)
+
+
+def _native_source_stat_snapshot(
+    region_dir: Path,
+    candidate_dir: Path,
+    cam_dir: Path,
+    image_ids: list[str],
+) -> dict[str, Any]:
+    rows: list[str] = []
+    total_bytes = 0
+    for image_id in image_ids:
+        for label, path in (
+            ("region_json", region_dir / f"{image_id}.json"),
+            ("region_npz", region_dir / f"{image_id}.npz"),
+            ("candidate_json", candidate_dir / f"{image_id}.json"),
+            ("candidate_npz", candidate_dir / f"{image_id}.npz"),
+            ("cam_npz", cam_dir / f"{image_id}.npz"),
+        ):
+            stat = path.stat()
+            total_bytes += int(stat.st_size)
+            rows.append(f"{label}/{image_id}\0{stat.st_size}\0{stat.st_mtime_ns}")
+    return {
+        "file_count": len(rows),
+        "total_bytes": total_bytes,
+        "stat_inventory_sha256": hashlib.sha256("\n".join(rows).encode("utf-8")).hexdigest(),
+    }
+
+
 def inspect_native_region_inputs(cfg: dict[str, Any]) -> dict[str, Any]:
     keys = ("region_feature_cache", "candidate_cache_dir", "cam_cache_dir")
     result: dict[str, Any] = {"ready": True, "items": {}}
@@ -570,8 +701,10 @@ def inspect_native_region_inputs(cfg: dict[str, Any]) -> dict[str, Any]:
             result["ready"] = False
     if result["ready"]:
         try:
-            ids = discover_native_region_ids(
+            ids = discover_native_input_ids(
                 cfg["paths"]["region_feature_cache"],
+                cfg["paths"]["candidate_cache_dir"],
+                cfg["paths"]["cam_cache_dir"],
                 bool(cfg.get("region_input", {}).get("require_all_pairs", True)),
             )
             result["paired_region_images"] = len(ids)
@@ -610,15 +743,27 @@ def load_native_region_directory(cfg: dict[str, Any]) -> FeatureBundle:
     require_all = bool(options.get("require_all_pairs", True))
     require_all_classes = bool(options.get("require_all_classes", True))
 
-    image_ids = discover_native_region_ids(region_dir, require_all)
+    all_image_ids = discover_native_input_ids(region_dir, candidate_dir, cam_dir, require_all)
+    registered_scope = is_registered_region_scope(cfg, protocol)
+    scope = protocol["registered_scope"]
+    if registered_scope and len(all_image_ids) != scope["expected_image_count"]:
+        raise InputValidationError(
+            "Registered image-count gate failed: "
+            f"{len(all_image_ids)} != {scope['expected_image_count']}."
+        )
+    image_ids = all_image_ids
     if limit is not None:
         image_ids = image_ids[:limit]
+    source_snapshot_before = _native_source_stat_snapshot(
+        region_dir, candidate_dir, cam_dir, image_ids
+    )
     id_to_name = _configured_id_to_name(cfg)
     class_order = [str(item["name"]) for item in cfg["data"]["classes"]]
     rng = np.random.default_rng(int(cfg["experiment"]["seed"]))
     reservoirs: dict[str, list[NativeRegionRecord]] = {name: [] for name in class_order}
     seen_counts: dict[str, int] = {name: 0 for name in class_order}
     total_candidates = 0
+    candidate_fingerprints: list[str] = []
 
     for image_id in image_ids:
         candidate_npz = candidate_dir / f"{image_id}.npz"
@@ -630,6 +775,7 @@ def load_native_region_directory(cfg: dict[str, Any]) -> FeatureBundle:
         candidate_meta, candidates, fingerprint = load_native_candidate_cache(
             candidate_dir, image_id, cfg
         )
+        candidate_fingerprints.append(f"{image_id}:{fingerprint}")
         region_meta, region = load_native_region_score(region_dir, image_id, fingerprint, cfg)
         if len(candidates) != len(region["region_features"]):
             raise InputValidationError(f"Candidate/region feature count mismatch for {image_id}.")
@@ -678,6 +824,29 @@ def load_native_region_directory(cfg: dict[str, Any]) -> FeatureBundle:
         for record in records
     ]
     selected_counts = {name: len(reservoirs[name]) for name in class_order}
+    source_snapshot_after = _native_source_stat_snapshot(
+        region_dir, candidate_dir, cam_dir, image_ids
+    )
+    if source_snapshot_before != source_snapshot_after:
+        raise InputValidationError("Native source files changed while the read-only probe was running.")
+    if registered_scope:
+        expected_seen = scope["expected_source_counts"]
+        expected_selected = {
+            name: scope["max_regions_per_class"] for name in class_order
+        }
+        if total_candidates != scope["expected_candidate_count"]:
+            raise InputValidationError(
+                "Registered candidate-count gate failed: "
+                f"{total_candidates} != {scope['expected_candidate_count']}."
+            )
+        if seen_counts != expected_seen:
+            raise InputValidationError(
+                f"Registered per-class source-count gate failed: {seen_counts} != {expected_seen}."
+            )
+        if selected_counts != expected_selected:
+            raise InputValidationError(
+                f"Registered selected-count gate failed: {selected_counts} != {expected_selected}."
+            )
     record_keys = [f"{record.image_id}:{record.candidate_index}" for record in records]
     if len(record_keys) != len(set(record_keys)):
         raise InputValidationError("Joined native region records contain duplicate row keys.")
@@ -706,7 +875,14 @@ def load_native_region_directory(cfg: dict[str, Any]) -> FeatureBundle:
             "cam_cache_dir": str(cam_dir.resolve()),
         },
         "image_count": len(image_ids),
+        "registered_formal_scope": registered_scope,
+        "registered_scope_expectations": scope,
         "candidate_count_scanned": total_candidates,
+        "candidate_fingerprint_inventory_sha256": hashlib.sha256(
+            "\n".join(candidate_fingerprints).encode("utf-8")
+        ).hexdigest(),
+        "source_stat_inventory_before": source_snapshot_before,
+        "source_stat_inventory_after": source_snapshot_after,
         "sam3_source_seen_counts": seen_counts,
         "selected_counts": selected_counts,
         "selected_records": selected_records,

@@ -244,7 +244,22 @@ def main() -> int:
                 return 2
             bundle = load_native_region_directory(cfg)
             encoder = CachedTextEncoder(text_cache, cfg)
-            scientific = registered_formal_scope
+            loaded_registered_scope = bool(
+                bundle.metadata.get("registered_formal_scope", False)
+            )
+            if loaded_registered_scope != registered_formal_scope:
+                raise ValueError(
+                    "Registered-scope decision changed between preflight and validated load."
+                )
+            manifest_protocol = manifest.get("region_provenance_file", {})
+            loaded_protocol_sha = bundle.metadata["provenance"][
+                "protocol_manifest_sha256"
+            ]
+            if manifest_protocol.get("sha256") != loaded_protocol_sha:
+                raise ValueError(
+                    "Protocol manifest changed between input manifest and validated load."
+                )
+            scientific = loaded_registered_scope
         results = run_region_probe(bundle, encoder, bank, cfg)
         write_json(run_dir / "region_level_results.json", results)
         write_json(run_dir / "validated_region_input.json", bundle.metadata)

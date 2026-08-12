@@ -43,6 +43,11 @@ def _write_protocol(path: Path, checkpoint: Path, *, text_selection: bool = Fals
             "cam": "cam_mask_mean_top1",
         },
         "registered_scope": {
+            "source_paths_relative_to_source_project_root": {
+                "region_feature_cache": "regions",
+                "candidate_cache_dir": "candidates",
+                "cam_cache_dir": "cams_train",
+            },
             "expected_image_count": 2522,
             "expected_candidate_count": 270641,
             "expected_source_counts": {
@@ -169,11 +174,14 @@ def _write_native_fixture(tmp_path: Path) -> tuple[dict, Path, Path, Path, Path,
     )
     checkpoint = tmp_path / "RemoteCLIP-ViT-B-32.pt"
     checkpoint.write_bytes(b"tiny-test-checkpoint")
-    protocol = tmp_path / "region_protocol.json"
+    protocol = tmp_path / "configs" / "region_probe_protocol_v0.json"
+    protocol.parent.mkdir()
     _write_protocol(protocol, checkpoint)
 
     cfg = load_config(ROOT / "configs" / "region_probe_v0.yaml", ROOT)
+    cfg["_meta"]["project_root"] = str(tmp_path)
     cfg["paths"].update({
+        "source_project_root": str(tmp_path),
         "remoteclip_checkpoint": str(checkpoint),
         "region_feature_cache": str(region_dir),
         "candidate_cache_dir": str(candidate_dir),
@@ -221,6 +229,18 @@ def test_registered_scope_is_computed_from_resolved_config(tmp_path):
     cfg["region_input"]["max_regions_per_class"] = 1000
     cfg["evaluation"]["region_sample_per_class"] = 25
     assert is_registered_region_scope(cfg, manifest) is False
+
+
+def test_noncanonical_protocol_cannot_be_loaded(tmp_path):
+    cfg, _, _, _, _, _ = _write_native_fixture(tmp_path)
+    alternate = tmp_path / "alternate_protocol.json"
+    alternate.write_text(
+        (ROOT / "configs" / "region_probe_protocol_v0.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    cfg["paths"]["region_provenance_file"] = str(alternate)
+    with pytest.raises(InputValidationError, match="committed canonical manifest"):
+        load_native_region_directory(cfg)
 
 
 def test_discovery_ignores_summary_and_prototype_artifacts(tmp_path):

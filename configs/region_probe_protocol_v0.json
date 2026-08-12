@@ -13,6 +13,11 @@
   "image_level_weak_tag_origin": "LoveDA Train pixel-mask presence simulation with a >=16-pixel threshold in the first-paper protocol",
   "selection_scope_note": "No pixel GT is opened by this Stage 0 adapter; all candidates are loaded before seed-42 sampling by SAM3 source class.",
   "registered_scope": {
+    "source_paths_relative_to_source_project_root": {
+      "region_feature_cache": "runs/candidate_region_remoteclip_loveda_main_v1",
+      "candidate_cache_dir": "runs/loveda_main_v1_manual4_candidates_train_v1/candidates",
+      "cam_cache_dir": "runs/cam_resnet50_loveda_main_v1_seed42/cams_train"
+    },
     "expected_image_count": 2522,
     "expected_candidate_count": 270641,
     "expected_source_counts": {

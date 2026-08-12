@@ -166,6 +166,16 @@ def _validated_registered_scope(
         value = str(scope.get(key, ""))
         if not re.fullmatch(r"[0-9a-f]{64}", value):
             raise InputValidationError(f"Registered scope has an invalid {key}.")
+    relative_paths = scope.get("source_paths_relative_to_source_project_root")
+    path_keys = ("region_feature_cache", "candidate_cache_dir", "cam_cache_dir")
+    if not isinstance(relative_paths, dict) or set(relative_paths) != set(path_keys):
+        raise InputValidationError(
+            "Registered scope must identify exactly the three source-cache relative paths."
+        )
+    for key in path_keys:
+        relative = Path(str(relative_paths[key]))
+        if relative.is_absolute() or ".." in relative.parts:
+            raise InputValidationError(f"Registered source path {key} must be a safe relative path.")
     return {
         **scope,
         "expected_image_count": expected_images,
@@ -186,7 +196,24 @@ def is_registered_region_scope(
         manifest = _read_json_object(Path(value))
     scope = _validated_registered_scope(manifest, cfg)
     options = cfg.get("region_input", {})
+    project_root = Path(str(cfg.get("_meta", {}).get("project_root", ""))).resolve()
+    canonical_protocol = (project_root / "configs" / "region_probe_protocol_v0.json").resolve()
+    configured_protocol = Path(str(cfg["paths"].get("region_provenance_file", ""))).resolve()
+    source_root_value = cfg["paths"].get("source_project_root")
+    source_root = Path(str(source_root_value)).resolve() if source_root_value else None
+    relative_paths = scope["source_paths_relative_to_source_project_root"]
+    sources_match = bool(
+        source_root
+        and all(
+            Path(str(cfg["paths"].get(key, ""))).resolve()
+            == (source_root / str(relative_paths[key])).resolve()
+            for key in relative_paths
+        )
+    )
     return bool(
+        configured_protocol == canonical_protocol
+        and sources_match
+        and
         options.get("limit_images") is None
         and options.get("require_all_pairs") is True
         and options.get("require_all_classes") is True
@@ -206,6 +233,12 @@ def load_region_protocol_manifest(cfg: dict[str, Any]) -> dict[str, Any]:
     if not value:
         raise InputValidationError("paths.region_provenance_file is required for a formal region probe.")
     path = Path(value)
+    project_root = Path(str(cfg.get("_meta", {}).get("project_root", ""))).resolve()
+    expected_path = (project_root / "configs" / "region_probe_protocol_v0.json").resolve()
+    if path.resolve() != expected_path:
+        raise InputValidationError(
+            f"Region protocol must be the committed canonical manifest: {expected_path}"
+        )
     _assert_read_only_source_path(path, "region protocol manifest")
     if not path.is_file():
         raise InputValidationError(f"Region protocol manifest must be a file: {path}")
@@ -769,6 +802,10 @@ def load_native_region_directory(cfg: dict[str, Any]) -> FeatureBundle:
     image_ids = all_image_ids
     if limit is not None:
         image_ids = image_ids[:limit]
+        if len(image_ids) != limit:
+            raise InputValidationError(
+                f"Requested pilot image limit {limit}, but only {len(image_ids)} were discovered."
+            )
     source_snapshot_before = _native_source_stat_snapshot(
         region_dir, candidate_dir, cam_dir, image_ids
     )

@@ -1,0 +1,59 @@
+{
+  "format_version": 1,
+  "status": "registered_design_not_executed",
+  "objective": "dataset-agnostic OV-WSSS across remote-sensing and natural-image domains",
+  "benchmark_order": ["voc2012_sbd", "loveda", "coco2014"],
+  "benchmark_roles": {
+    "voc2012_sbd": "primary low-cost natural-image development benchmark",
+    "loveda": "remote-sensing domain-transfer benchmark",
+    "coco2014": "large-scale 80-class stress benchmark after VOC passes"
+  },
+  "core_pipeline": [
+    "dataset adapter supplies images, image-level tags, class ontology, and split manifest",
+    "proposal provider supplies precomputed or frozen candidate masks",
+    "encoder-matched image and text towers produce normalized features",
+    "dataset-independent region-text assignment produces semantic region scores",
+    "dataset adapter fuses regions into canonical semantic maps",
+    "optional student is trained only after no-training gates pass"
+  ],
+  "dataset_specific_only": [
+    "class names, aliases, and prompt nouns",
+    "raw label IDs and canonical mapping",
+    "image and annotation file layouts",
+    "background and ignore semantics",
+    "split manifests",
+    "proposal-generation configuration",
+    "semantic evaluation conversion"
+  ],
+  "forbidden_core_dependencies": [
+    "hard-coded six-class tensors",
+    "LoveDA image-ID regular expressions",
+    "1024x1024 image assumptions",
+    "remote-sensing-only prompt templates",
+    "contiguous dataset category IDs",
+    "SAM3-specific cache schema in model logic"
+  ],
+  "execution_gates": {
+    "voc2012_sbd": [
+      "official archives downloaded into the dedicated project inputs directory",
+      "archive checksums and terms recorded",
+      "VOC val overlap removed from SBD training through train_noval",
+      "20-class mapping and split counts validated",
+      "no-training RemoteCLIP bridge completed on a frozen image-ID-selected sample"
+    ],
+    "coco2014": [
+      "VOC no-training experiment passes its pre-registered gate",
+      "COCO 2014 images and annotations are separately authorized for download",
+      "80-category sparse IDs validated against annotations",
+      "crowd and cross-category overlap conversion policy frozen before evaluation",
+      "compute and storage budget approved"
+    ]
+  },
+  "current_decision": {
+    "download_now": false,
+    "train_now": false,
+    "next_dataset": "voc2012_sbd",
+    "next_action": "implement and test dataset registry plus read-only inventory; then obtain download authorization"
+  }
+}
+

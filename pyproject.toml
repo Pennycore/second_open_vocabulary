@@ -7,7 +7,7 @@ name = "ov-probe"
 version = "0.1.0"
 description = "Read-only Stage 0 region/prototype-text alignment probe for OV-WSSS"
 requires-python = ">=3.10"
-dependencies = ["numpy", "pandas", "PyYAML", "matplotlib", "seaborn", "torch"]
+dependencies = ["numpy", "pandas", "Pillow", "PyYAML", "matplotlib", "seaborn", "torch"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

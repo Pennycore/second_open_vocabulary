@@ -1,0 +1,44 @@
+experiment:
+  name: encoder_compare_pack_v0
+  seed: 42
+  overwrite: false
+
+paths:
+  # Fill these only in an ignored configs/encoder_compare_export_v0.local.yaml.
+  source_project_root: null
+  dataset_root: null
+  checkpoint_root: null
+  image_dir: null
+  candidate_cache_dir: null
+  region_feature_cache: null
+  remoteclip_checkpoint: null
+  selection_file: null
+  selection_input_manifest: null
+  selection_summary: null
+  selection_validation: null
+  export_protocol_file: configs/encoder_compare_protocol_v0.json
+  output_root: outputs/encoder_compare_pack_v0
+
+model:
+  model_name: ViT-B-32
+  feature_dim: 512
+  device: auto
+  normalize_features: true
+
+data:
+  dataset_name: LoveDA
+  split: train
+  use_validation_set: false
+  allow_pixel_gt: false
+  allow_oracle: false
+  require_provenance: true
+  classes:
+    - {id: 1, name: building}
+    - {id: 2, name: road}
+    - {id: 3, name: water}
+    - {id: 4, name: barren}
+    - {id: 5, name: forest}
+    - {id: 6, name: agriculture}
+
+export:
+  shard_size: 500

@@ -1,0 +1,85 @@
+{
+  "format_version": 1,
+  "dataset": "LoveDA",
+  "split": "train",
+  "direct_pixel_gt_used": false,
+  "love_da_val_used": false,
+  "oracle_used": false,
+  "e2_used": false,
+  "selection": {
+    "source_run_code_commit": "ec1a661841161e167674b450608291eb490785d4",
+    "source_run_name": "run_20260812_005",
+    "source_run_artifacts_sha256": {
+      "input_manifest.json": "fbd7e24812eda182334a1aa74ad9973d5372276472347e73aef1e5c8f8edbf67",
+      "summary_metrics.json": "ce5b2080358be3f280a0c9b4078dae1731d01f2fac9f23b14ddbeebe4b94a230",
+      "validated_region_input.json": "8ab19d48599864148234f79f57dc109dc08ee14a6e0623f59cd7b80011a2072e"
+    },
+    "selected_records_sha256": "c7e5104cea0e0de85a711967982788f972d966f0053538fc05ab894181d6c5b7",
+    "ordered_record_key_sha256": "a1240067efcbd43611eef296e930243801afa1cb7a7be948bdd7b09d9b3e608a",
+    "record_count": 6000,
+    "image_count": 2058,
+    "sampling_reference": "sam3_source_class",
+    "sampling_seed": 42,
+    "uses_gt_derived_image_tags": true,
+    "image_level_weak_tag_origin": "LoveDA Train pixel-mask presence simulation with a >=16-pixel threshold",
+    "class_counts": {
+      "building": 1000,
+      "road": 1000,
+      "water": 1000,
+      "barren": 1000,
+      "forest": 1000,
+      "agriculture": 1000
+    }
+  },
+  "source_paths": {
+    "source_project_root_canonical": "/home/undergr/Sheungzhen_project_1/sam3_remote_wsss",
+    "dataset_root_canonical": "/home/undergr/remote_dataset/LoveDA_main_v1",
+    "checkpoint_root_canonical": "/home/undergr/Sheungzhen_project_1",
+    "candidate_cache_dir_relative_to_source_project_root": "runs/loveda_main_v1_manual4_candidates_train_v1/candidates",
+    "region_feature_cache_relative_to_source_project_root": "runs/candidate_region_remoteclip_loveda_main_v1",
+    "image_dir_relative_to_dataset_root": "train/images",
+    "remoteclip_checkpoint_relative_to_checkpoint_root": "checkpoints/RemoteCLIP-ViT-B-32.pt",
+    "implementation_files_relative_to_source_project_root": {
+      "candidate_region_scores.py": "src/sam3_remote_wsss/candidate_region_scores.py",
+      "remoteclip_backend.py": "src/sam3_remote_wsss/remoteclip_backend.py",
+      "candidate_cache.py": "src/sam3_remote_wsss/candidate_cache.py",
+      "score_candidate_regions.py": "src/sam3_remote_wsss/score_candidate_regions.py"
+    }
+  },
+  "crop_views": {
+    "image_mode": "RGB",
+    "context_ratio": 0.25,
+    "min_crop_size": 48,
+    "background_retain": 0.25,
+    "background_rounding": "numpy.rint then clip [0,255] then uint8",
+    "mask_encoding": "flattened-packbits-little",
+    "view_order": ["context", "mask-emphasized"],
+    "view_fusion": "L2 each encoded view, arithmetic mean, L2 fused result"
+  },
+  "reference_features": {
+    "array": "region_features",
+    "shape": [6000, 512],
+    "dtype": "float16",
+    "model_name": "ViT-B-32",
+    "checkpoint_sha256": "60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4"
+  },
+  "source_implementation_sha256": {
+    "candidate_region_scores.py": "2863ad70a95d5ce5d2ea228199d022245a54a380966f65b3abd09a22d7916328",
+    "remoteclip_backend.py": "0045bd512f9bea29cf64cfc91cd59fbeee1ee564ae73578b5f8d4e5dcfa25577",
+    "candidate_cache.py": "4863828b09a0da0256b51119201d48c5d35c60b9dd7b2e9fee5f635c53302259",
+    "score_candidate_regions.py": "c02dca72a12c9d2837ee47d55fc974800e777abe2dface7737942637c2596d68"
+  },
+  "export": {
+    "shard_size": 500,
+    "compression": "numpy savez_compressed",
+    "include_reference_region_features": true,
+    "forbid_lossy_images": true
+  },
+  "forbidden_inputs": [
+    "LoveDA labels or pixel masks",
+    "LoveDA Val",
+    "Potsdam Val",
+    "E2 oracle outputs",
+    "region predicted_class_ids as weak truth"
+  ]
+}

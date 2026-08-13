@@ -11,6 +11,7 @@ from ov_probe.voc_sbd import (
     audit_extracted_dataset,
     extract_archive_safely,
     inspect_archive,
+    load_voc_image_level_tags,
 )
 
 
@@ -89,3 +90,25 @@ def test_split_audit_accepts_disjoint_train_noval(tmp_path: Path) -> None:
     assert audit["sbd"]["train_noval_ids"] == 2
     assert audit["sbd"]["train_noval_voc_val_overlap"] == 0
     assert audit["pixel_annotation_values_read"] is False
+
+
+def test_voc_classification_tags_use_registered_difficult_policy(tmp_path: Path) -> None:
+    main = tmp_path / "ImageSets" / "Main"
+    main.mkdir(parents=True)
+    (main / "cat_train.txt").write_text("a 1\nb 0\nc -1\n", encoding="utf-8")
+    (main / "dog_train.txt").write_text("a -1\nb 1\nc 0\n", encoding="utf-8")
+    tags, metadata = load_voc_image_level_tags(tmp_path, ["cat", "dog"])
+    assert tags == {"a": ("cat",), "b": ("cat", "dog"), "c": ("dog",)}
+    assert metadata["difficult_counts"] == {"cat": 1, "dog": 1}
+    assert metadata["segmentation_masks_read"] is False
+
+
+def test_voc_classification_tags_reject_val_and_row_reordering(tmp_path: Path) -> None:
+    main = tmp_path / "ImageSets" / "Main"
+    main.mkdir(parents=True)
+    (main / "cat_train.txt").write_text("a 1\nb -1\n", encoding="utf-8")
+    (main / "dog_train.txt").write_text("b 1\na -1\n", encoding="utf-8")
+    with pytest.raises(DatasetPreparationError, match="not identically ordered"):
+        load_voc_image_level_tags(tmp_path, ["cat", "dog"])
+    with pytest.raises(DatasetPreparationError, match="restricted to the VOC train split"):
+        load_voc_image_level_tags(tmp_path, ["cat"], split="val")

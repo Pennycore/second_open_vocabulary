@@ -31,3 +31,5 @@ def test_voc_sbd_preparation_protocol_matches_implementation() -> None:
     assert preparation["read_pixel_annotation_values"] is False
     assert preparation["run_sam_or_proposal_model"] is False
     assert preparation["run_training"] is False
+    assert protocol["voc_image_level_tags"]["difficult_policy"] == "positive_presence"
+    assert protocol["voc_image_level_tags"]["segmentation_masks_read"] is False

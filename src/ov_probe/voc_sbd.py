@@ -26,6 +26,72 @@ class DatasetPreparationError(RuntimeError):
     pass
 
 
+def load_voc_image_level_tags(
+    voc_root: Path,
+    class_names: Iterable[str],
+    *,
+    split: str = "train",
+    difficult_policy: str = "positive_presence",
+) -> tuple[dict[str, tuple[str, ...]], dict[str, Any]]:
+    """Load VOC classification-task labels without reading segmentation masks."""
+    if split != "train":
+        raise DatasetPreparationError("Weak-label loading is restricted to the VOC train split.")
+    if difficult_policy not in {"positive_presence", "exclude"}:
+        raise DatasetPreparationError(f"Unsupported difficult policy: {difficult_policy}")
+    names = tuple(class_names)
+    if not names or len(names) != len(set(names)):
+        raise DatasetPreparationError("VOC class names must be unique and non-empty.")
+
+    labels_by_image: dict[str, set[str]] = {}
+    ordered_ids: list[str] | None = None
+    difficult_counts: dict[str, int] = {}
+    main = voc_root / "ImageSets" / "Main"
+    for class_name in names:
+        path = main / f"{class_name}_{split}.txt"
+        if not path.is_file() or path.is_symlink():
+            raise DatasetPreparationError(f"Missing VOC classification label file: {path}")
+        records: list[tuple[str, int]] = []
+        for line_number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            parts = raw.split()
+            if len(parts) != 2:
+                raise DatasetPreparationError(f"Malformed VOC label at {path}:{line_number}")
+            image_id, value_raw = parts
+            if "/" in image_id or "\\" in image_id or image_id in {".", ".."}:
+                raise DatasetPreparationError(f"Unsafe VOC image ID at {path}:{line_number}")
+            try:
+                value = int(value_raw)
+            except ValueError as exc:
+                raise DatasetPreparationError(f"Non-integer VOC label at {path}:{line_number}") from exc
+            if value not in {-1, 0, 1}:
+                raise DatasetPreparationError(f"Unexpected VOC label at {path}:{line_number}: {value}")
+            records.append((image_id, value))
+        ids = [image_id for image_id, _ in records]
+        if len(ids) != len(set(ids)):
+            raise DatasetPreparationError(f"Duplicate VOC image ID in {path}")
+        if ordered_ids is None:
+            ordered_ids = ids
+            labels_by_image = {image_id: set() for image_id in ids}
+        elif ids != ordered_ids:
+            raise DatasetPreparationError(f"VOC class label rows are not identically ordered: {path}")
+        difficult_counts[class_name] = sum(value == 0 for _, value in records)
+        for image_id, value in records:
+            if value == 1 or (value == 0 and difficult_policy == "positive_presence"):
+                labels_by_image[image_id].add(class_name)
+
+    assert ordered_ids is not None
+    tags = {image_id: tuple(name for name in names if name in labels_by_image[image_id]) for image_id in ordered_ids}
+    metadata = {
+        "split": split,
+        "image_count": len(tags),
+        "class_count": len(names),
+        "difficult_policy": difficult_policy,
+        "difficult_counts": difficult_counts,
+        "images_without_positive_tags": sum(not value for value in tags.values()),
+        "segmentation_masks_read": False,
+    }
+    return tags, metadata
+
+
 def file_digest(path: Path, algorithm: str = "sha256") -> str:
     digest = hashlib.new(algorithm)
     with path.open("rb") as handle:

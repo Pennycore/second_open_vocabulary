@@ -1,0 +1,41 @@
+{
+  "format_version": 1,
+  "status": "frozen_before_extraction",
+  "dataset_id": "voc2012_sbd",
+  "dataset_root": "inputs/datasets/voc2012_sbd",
+  "artifacts": {
+    "VOCtrainval_11-May-2012.tar": {
+      "official_url": "https://thor.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar",
+      "download_url": "https://d2l-data.s3-accelerate.amazonaws.com/VOCtrainval_11-May-2012.tar",
+      "mirror_requires_official_md5": true,
+      "md5": "6cd6e144f989b92b3379bac3b3de84fd"
+    },
+    "benchmark.tgz": {
+      "official_url": "https://www2.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/semantic_contours/benchmark.tgz",
+      "download_url": "same_as_official",
+      "md5": "82b4d87ceb2ed10f6038a1cba92111cb"
+    },
+    "train_noval.txt": {
+      "official_url": "https://www.cs.cornell.edu/~bharathh/train_noval.txt",
+      "download_url": "same_as_official",
+      "md5": "79bff800c5f0b1ec6b21080a3c066722"
+    }
+  },
+  "preparation": {
+    "safe_staging_extraction": true,
+    "overwrite_existing_extraction": false,
+    "reject_links_special_files_and_path_escape": true,
+    "require_train_noval_subset_of_sbd_images_and_masks": true,
+    "require_train_noval_voc2012_val_overlap": 0,
+    "read_pixel_annotation_values": false,
+    "run_sam_or_proposal_model": false,
+    "run_training": false
+  },
+  "postconditions": {
+    "manifest": "extracted/dataset_manifest.json",
+    "all_input_md5_match": true,
+    "all_input_sha256_recorded": true,
+    "split_counts_recorded_from_text_files": true,
+    "annotation_files_counted_by_filename_only": true
+  }
+}

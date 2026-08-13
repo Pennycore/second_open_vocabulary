@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "status": "registered_design_not_executed",
+  "status": "voc2012_sbd_data_preparation_in_progress",
   "objective": "dataset-agnostic OV-WSSS across remote-sensing and natural-image domains",
   "benchmark_order": ["voc2012_sbd", "loveda", "coco2014"],
   "benchmark_roles": {
@@ -50,10 +50,10 @@
     ]
   },
   "current_decision": {
-    "download_now": false,
+    "download_now": "voc2012_and_sbd_only",
     "train_now": false,
     "next_dataset": "voc2012_sbd",
-    "next_action": "implement and test dataset registry plus read-only inventory; then obtain download authorization"
+    "next_action": "verify archives, safely extract into a new directory, and audit train_noval before any model run",
+    "download_coco_now": false
   }
 }
-

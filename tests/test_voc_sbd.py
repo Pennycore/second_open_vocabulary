@@ -112,3 +112,15 @@ def test_voc_classification_tags_reject_val_and_row_reordering(tmp_path: Path) -
         load_voc_image_level_tags(tmp_path, ["cat", "dog"])
     with pytest.raises(DatasetPreparationError, match="restricted to the VOC train split"):
         load_voc_image_level_tags(tmp_path, ["cat"], split="val")
+
+
+def test_preparation_protocol_identity_is_fail_closed(tmp_path: Path) -> None:
+    from ov_probe.voc_sbd import prepare_voc_sbd
+
+    protocol = tmp_path / "protocol.json"
+    protocol.write_text(
+        '{"status":"frozen_before_extraction","dataset_id":"voc2012_sbd","artifacts":{}}',
+        encoding="utf-8",
+    )
+    with pytest.raises(DatasetPreparationError, match="does not match registered artifacts"):
+        prepare_voc_sbd(tmp_path / "dataset", protocol_path=protocol, code_commit="abc")

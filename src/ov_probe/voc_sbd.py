@@ -242,7 +242,12 @@ def _write_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
         os.fsync(handle.fileno())
 
 
-def prepare_voc_sbd(dataset_root: Path) -> dict[str, Any]:
+def prepare_voc_sbd(
+    dataset_root: Path,
+    *,
+    protocol_path: Path | None = None,
+    code_commit: str | None = None,
+) -> dict[str, Any]:
     root = dataset_root.resolve()
     raw = root / "raw"
     final = root / "extracted"
@@ -250,6 +255,27 @@ def prepare_voc_sbd(dataset_root: Path) -> dict[str, Any]:
         raise DatasetPreparationError(f"Refusing to overwrite existing extraction: {final}")
     archives = [raw / VOC_ARCHIVE, raw / SBD_ARCHIVE]
     support = raw / TRAIN_NOVAL
+    preparation_identity: dict[str, Any] = {"code_commit": code_commit}
+    if protocol_path is not None:
+        protocol = protocol_path.resolve()
+        if not protocol.is_file() or protocol.is_symlink():
+            raise DatasetPreparationError(f"Preparation protocol is not a regular file: {protocol}")
+        protocol_bytes = protocol.read_bytes()
+        payload = json.loads(protocol_bytes.decode("utf-8"))
+        registered_md5 = {
+            name: record["md5"] for name, record in payload.get("artifacts", {}).items()
+        }
+        if payload.get("dataset_id") != "voc2012_sbd" or registered_md5 != EXPECTED_MD5:
+            raise DatasetPreparationError("Preparation protocol does not match registered artifacts.")
+        if payload.get("status") != "frozen_before_extraction":
+            raise DatasetPreparationError("Preparation protocol was not frozen before extraction.")
+        preparation_identity.update(
+            {
+                "protocol_name": protocol.name,
+                "protocol_sha256": hashlib.sha256(protocol_bytes).hexdigest(),
+            }
+        )
+
     for path in [*archives, support]:
         if not path.is_file() or path.is_symlink():
             raise DatasetPreparationError(f"Required regular input file is missing: {path}")
@@ -299,6 +325,7 @@ def prepare_voc_sbd(dataset_root: Path) -> dict[str, Any]:
                 },
             },
             "inputs": inputs,
+            "preparation_identity": preparation_identity,
             "extracted_regular_files": extracted_counts,
             "audit": audit,
             "policies": {

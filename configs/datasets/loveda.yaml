@@ -1,0 +1,24 @@
+schema_version: 1
+dataset_id: loveda
+domain: remote_sensing
+task: semantic_segmentation
+classes:
+  - {dataset_id: 1, canonical_name: building}
+  - {dataset_id: 2, canonical_name: road}
+  - {dataset_id: 3, canonical_name: water}
+  - {dataset_id: 4, canonical_name: barren}
+  - {dataset_id: 5, canonical_name: forest}
+  - {dataset_id: 6, canonical_name: agriculture}
+background:
+  canonical_id: 0
+ignore:
+  canonical_id: 255
+splits:
+  weak_train: train
+  development: null
+  final_evaluation: val
+weak_label_origin: train_pixel_mask_presence_simulation_min16
+pixel_gt_policy:
+  weak_train_direct_access: forbidden
+  final_evaluation_access: only_after_method_freeze
+

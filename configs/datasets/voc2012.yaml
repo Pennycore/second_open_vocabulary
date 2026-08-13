@@ -1,0 +1,43 @@
+schema_version: 1
+dataset_id: voc2012_sbd
+domain: natural_images
+task: semantic_segmentation
+classes:
+  - {dataset_id: 1, canonical_name: aeroplane}
+  - {dataset_id: 2, canonical_name: bicycle}
+  - {dataset_id: 3, canonical_name: bird}
+  - {dataset_id: 4, canonical_name: boat}
+  - {dataset_id: 5, canonical_name: bottle}
+  - {dataset_id: 6, canonical_name: bus}
+  - {dataset_id: 7, canonical_name: car}
+  - {dataset_id: 8, canonical_name: cat}
+  - {dataset_id: 9, canonical_name: chair}
+  - {dataset_id: 10, canonical_name: cow}
+  - {dataset_id: 11, canonical_name: diningtable}
+  - {dataset_id: 12, canonical_name: dog}
+  - {dataset_id: 13, canonical_name: horse}
+  - {dataset_id: 14, canonical_name: motorbike}
+  - {dataset_id: 15, canonical_name: person}
+  - {dataset_id: 16, canonical_name: pottedplant}
+  - {dataset_id: 17, canonical_name: sheep}
+  - {dataset_id: 18, canonical_name: sofa}
+  - {dataset_id: 19, canonical_name: train}
+  - {dataset_id: 20, canonical_name: tvmonitor}
+background:
+  canonical_id: 0
+ignore:
+  canonical_id: 255
+splits:
+  weak_train: sbd_train_noval
+  development: voc2012_train
+  final_evaluation: voc2012_val
+weak_label_origin: tags_derived_from_training_annotations
+augmentation:
+  source: Semantic Boundaries Dataset
+  required_split: train_noval
+  reason: excludes VOC2012 val images
+pixel_gt_policy:
+  weak_train_direct_access: forbidden
+  development_access: method_development_only
+  final_evaluation_access: only_after_method_freeze
+

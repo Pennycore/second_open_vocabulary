@@ -1,0 +1,102 @@
+schema_version: 1
+dataset_id: coco2014
+domain: natural_images
+task: semantic_segmentation_from_instance_annotations
+classes:
+  - {dataset_id: 1, canonical_name: person}
+  - {dataset_id: 2, canonical_name: bicycle}
+  - {dataset_id: 3, canonical_name: car}
+  - {dataset_id: 4, canonical_name: motorcycle}
+  - {dataset_id: 5, canonical_name: airplane}
+  - {dataset_id: 6, canonical_name: bus}
+  - {dataset_id: 7, canonical_name: train}
+  - {dataset_id: 8, canonical_name: truck}
+  - {dataset_id: 9, canonical_name: boat}
+  - {dataset_id: 10, canonical_name: traffic light}
+  - {dataset_id: 11, canonical_name: fire hydrant}
+  - {dataset_id: 13, canonical_name: stop sign}
+  - {dataset_id: 14, canonical_name: parking meter}
+  - {dataset_id: 15, canonical_name: bench}
+  - {dataset_id: 16, canonical_name: bird}
+  - {dataset_id: 17, canonical_name: cat}
+  - {dataset_id: 18, canonical_name: dog}
+  - {dataset_id: 19, canonical_name: horse}
+  - {dataset_id: 20, canonical_name: sheep}
+  - {dataset_id: 21, canonical_name: cow}
+  - {dataset_id: 22, canonical_name: elephant}
+  - {dataset_id: 23, canonical_name: bear}
+  - {dataset_id: 24, canonical_name: zebra}
+  - {dataset_id: 25, canonical_name: giraffe}
+  - {dataset_id: 27, canonical_name: backpack}
+  - {dataset_id: 28, canonical_name: umbrella}
+  - {dataset_id: 31, canonical_name: handbag}
+  - {dataset_id: 32, canonical_name: tie}
+  - {dataset_id: 33, canonical_name: suitcase}
+  - {dataset_id: 34, canonical_name: frisbee}
+  - {dataset_id: 35, canonical_name: skis}
+  - {dataset_id: 36, canonical_name: snowboard}
+  - {dataset_id: 37, canonical_name: sports ball}
+  - {dataset_id: 38, canonical_name: kite}
+  - {dataset_id: 39, canonical_name: baseball bat}
+  - {dataset_id: 40, canonical_name: baseball glove}
+  - {dataset_id: 41, canonical_name: skateboard}
+  - {dataset_id: 42, canonical_name: surfboard}
+  - {dataset_id: 43, canonical_name: tennis racket}
+  - {dataset_id: 44, canonical_name: bottle}
+  - {dataset_id: 46, canonical_name: wine glass}
+  - {dataset_id: 47, canonical_name: cup}
+  - {dataset_id: 48, canonical_name: fork}
+  - {dataset_id: 49, canonical_name: knife}
+  - {dataset_id: 50, canonical_name: spoon}
+  - {dataset_id: 51, canonical_name: bowl}
+  - {dataset_id: 52, canonical_name: banana}
+  - {dataset_id: 53, canonical_name: apple}
+  - {dataset_id: 54, canonical_name: sandwich}
+  - {dataset_id: 55, canonical_name: orange}
+  - {dataset_id: 56, canonical_name: broccoli}
+  - {dataset_id: 57, canonical_name: carrot}
+  - {dataset_id: 58, canonical_name: hot dog}
+  - {dataset_id: 59, canonical_name: pizza}
+  - {dataset_id: 60, canonical_name: donut}
+  - {dataset_id: 61, canonical_name: cake}
+  - {dataset_id: 62, canonical_name: chair}
+  - {dataset_id: 63, canonical_name: couch}
+  - {dataset_id: 64, canonical_name: potted plant}
+  - {dataset_id: 65, canonical_name: bed}
+  - {dataset_id: 67, canonical_name: dining table}
+  - {dataset_id: 70, canonical_name: toilet}
+  - {dataset_id: 72, canonical_name: tv}
+  - {dataset_id: 73, canonical_name: laptop}
+  - {dataset_id: 74, canonical_name: mouse}
+  - {dataset_id: 75, canonical_name: remote}
+  - {dataset_id: 76, canonical_name: keyboard}
+  - {dataset_id: 77, canonical_name: cell phone}
+  - {dataset_id: 78, canonical_name: microwave}
+  - {dataset_id: 79, canonical_name: oven}
+  - {dataset_id: 80, canonical_name: toaster}
+  - {dataset_id: 81, canonical_name: sink}
+  - {dataset_id: 82, canonical_name: refrigerator}
+  - {dataset_id: 84, canonical_name: book}
+  - {dataset_id: 85, canonical_name: clock}
+  - {dataset_id: 86, canonical_name: vase}
+  - {dataset_id: 87, canonical_name: scissors}
+  - {dataset_id: 88, canonical_name: teddy bear}
+  - {dataset_id: 89, canonical_name: hair drier}
+  - {dataset_id: 90, canonical_name: toothbrush}
+background:
+  canonical_id: 0
+ignore:
+  canonical_id: 255
+splits:
+  weak_train: train2014
+  development: null
+  final_evaluation: val2014
+weak_label_origin: tags_derived_from_training_instance_annotations
+semantic_conversion:
+  status: blocked_pending_frozen_policy
+  crowd: must_be_explicitly_registered
+  cross_category_overlap: must_be_explicitly_registered
+pixel_gt_policy:
+  weak_train_direct_access: forbidden
+  final_evaluation_access: only_after_method_freeze
+

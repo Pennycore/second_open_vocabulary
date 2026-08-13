@@ -26,6 +26,8 @@ logs/
 # Large data/run directories that may appear on a workstation or server
 data/
 datasets/
+!configs/datasets/
+!configs/datasets/*.yaml
 runs/
 checkpoints/
 weights/

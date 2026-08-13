@@ -1,0 +1,34 @@
+{
+  "format_version": 1,
+  "role": "post-result descriptive analysis; not a new confirmatory test",
+  "seed": 42,
+  "registered_inputs": {
+    "pixel_pack_manifest_sha256": "94be07257803b299665906878c3a08b223ff8dbb3c964f8f4ed09e9de813e1f4",
+    "pixel_pack_records_sha256": "cb75352d1c590c0723330791dbdcee046ef7fb7d0d7f1cfb5f04712e432b425d",
+    "comparison_summary_sha256": "2719a053c061fd393dea1a36ae35cd9769f5d45dd3efd30d1c205af566aac498",
+    "comparison_outputs_sha256": "3af67fac4ef8669fb407f0cb255a009214462a5ec48716c432ea55aa817e0ec4",
+    "bundle_id": "741d467c8b264f8bf4d5a683bd8e1440e34f0894ed24b8b0ff6db2bd4218050d"
+  },
+  "classes": ["building", "road", "water", "barren", "forest", "agriculture"],
+  "primary_group": "group_A_closed",
+  "comparison_categories": [
+    "both_correct",
+    "remoteclip_only_correct",
+    "openai_clip_only_correct",
+    "both_wrong_same",
+    "both_wrong_different"
+  ],
+  "example_selection": {
+    "categories": ["remoteclip_only_correct", "openai_clip_only_correct"],
+    "per_class_category": 1,
+    "ordering": "ascending SHA-256 of seed:image_id:candidate_index:category",
+    "uses_similarity_or_confidence": false
+  },
+  "claims": {
+    "confirmatory_result": false,
+    "true_accuracy": false,
+    "open_vocabulary_segmentation": false,
+    "causal_mechanism": false
+  }
+}
+

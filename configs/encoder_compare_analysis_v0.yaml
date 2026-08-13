@@ -1,0 +1,15 @@
+experiment:
+  name: encoder_compare_analysis_v0
+  seed: 42
+  overwrite: false
+
+paths:
+  pixel_pack: inputs/encoder_compare_pack_v0/run_20260813_001/pixel_pack
+  comparison_run: outputs/encoder_compare_v0/run_20260813_001
+  protocol_file: configs/encoder_compare_analysis_protocol_v0.json
+  output_root: outputs/encoder_compare_analysis_v0
+
+analysis:
+  primary_group: group_A_closed
+  examples_per_class_category: 1
+

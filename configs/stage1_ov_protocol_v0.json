@@ -1,0 +1,78 @@
+{
+  "format_version": 1,
+  "status": "registered_design_not_executed",
+  "research_role": "Stage 1 protocol for testing held-out class transfer before student training",
+  "encoder_decision": {
+    "primary": "RemoteCLIP ViT-B/32",
+    "frozen_checkpoint_sha256": "60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4",
+    "baseline": "OpenAI CLIP ViT-B/32 quick-GELU",
+    "basis": "pre-registered paired Stage 0 comparison run_20260813_001"
+  },
+  "classes": ["building", "road", "water", "barren", "forest", "agriculture"],
+  "folds": [
+    {"fold": "holdout_building", "unseen": ["building"], "seen": ["road", "water", "barren", "forest", "agriculture"]},
+    {"fold": "holdout_road", "unseen": ["road"], "seen": ["building", "water", "barren", "forest", "agriculture"]},
+    {"fold": "holdout_water", "unseen": ["water"], "seen": ["building", "road", "barren", "forest", "agriculture"]},
+    {"fold": "holdout_barren", "unseen": ["barren"], "seen": ["building", "road", "water", "forest", "agriculture"]},
+    {"fold": "holdout_forest", "unseen": ["forest"], "seen": ["building", "road", "water", "barren", "agriculture"]},
+    {"fold": "holdout_agriculture", "unseen": ["agriculture"], "seen": ["building", "road", "water", "barren", "forest"]}
+  ],
+  "phase_1_proxy": {
+    "purpose": "low-cost no-training held-out text matching diagnostic",
+    "input_scope": "LoveDA Train candidates only",
+    "candidate_sampling": "image-ID-based or all candidates; never select by VLM score, margin, prediction, pixel GT, or held-out correctness",
+    "prototype_rule": "visual prototypes, if used, are constructed from seen classes only",
+    "unseen_rule": "held-out class has no visual prototype, calibration samples, threshold tuning, or prompt selection",
+    "prediction_vocabulary": "all six class names plus the frozen Stage 0 distractors",
+    "primary_metric": "held-out text assignment rate on an independently frozen evaluation subset",
+    "inference": "image-clustered confidence interval across all six folds",
+    "claim_limit": "proxy weak-label transfer only; not true unseen accuracy or segmentation"
+  },
+  "phase_2_confirmatory": {
+    "purpose": "pixel-level OV-WSSS evaluation after the method is frozen",
+    "training_split": "LoveDA Train",
+    "evaluation_split": "LoveDA Val",
+    "pixel_gt_policy": "Val pixel GT may be opened once for final frozen evaluation only",
+    "selection_forbidden": [
+      "prompt selection on Val",
+      "threshold selection on Val",
+      "fold selection after observing Val",
+      "checkpoint selection on unseen-class Val performance",
+      "reporting only favorable folds"
+    ],
+    "required_reporting": [
+      "all six folds",
+      "seen mIoU",
+      "unseen mIoU",
+      "harmonic mean of seen and unseen mIoU",
+      "per-class IoU",
+      "mean and dispersion across folds",
+      "RemoteCLIP versus frozen OpenAI CLIP baseline"
+    ]
+  },
+  "leakage_controls": {
+    "existing_balanced_6000_pack_is_confirmatory_unseen_benchmark": false,
+    "reason": "the pack was balanced by SAM3 source weak class and is therefore selection-conditioned",
+    "cam_is_independent_ground_truth": false,
+    "sam3_source_is_ground_truth": false,
+    "train_image_tags_origin": "LoveDA Train pixel-mask presence simulation with minimum 16 pixels; inherited disclosure required",
+    "e2_oracle_allowed": false,
+    "val_allowed_before_final_method_freeze": false
+  },
+  "execution_gate": {
+    "current_state": "blocked_pending_data_contract",
+    "required_before_phase_1": [
+      "an immutable all-candidate or image-ID-selected pixel package not balanced by held-out labels",
+      "a frozen row-key manifest and source hashes",
+      "a fold-specific prompt/token manifest",
+      "a pre-result analysis commit and protocol SHA-256"
+    ],
+    "required_before_phase_2": [
+      "a frozen trainable method and model-selection split that is disjoint from final Val evaluation",
+      "a no-overwrite inference runner",
+      "a final-evaluation manifest describing exact LoveDA Val files and label mapping",
+      "explicit authorization to use Val pixel GT for the one-time final evaluation"
+    ]
+  }
+}
+

@@ -1,0 +1,38 @@
+{
+  "format_version": 1,
+  "role": "pre-result RemoteCLIP pixel-to-feature bridge gate",
+  "dataset": "LoveDA",
+  "split": "train",
+  "seed": 42,
+  "model": {
+    "architecture": "ViT-B-32",
+    "checkpoint_sha256": "60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4",
+    "feature_dim": 512,
+    "open_clip_version": "3.3.0",
+    "view_fusion": "L2(context) and L2(masked), arithmetic mean, then L2",
+    "preprocess": "OpenCLIP 3.3.0 create_model_and_transforms('ViT-B-32', pretrained=None) eval transform"
+  },
+  "pixel_pack": {
+    "protocol_sha256": "2b04eb73fbc4226381718944bdffe2f7b02afa81e4529c37a89c965d6312d7b3",
+    "bundle_id": "741d467c8b264f8bf4d5a683bd8e1440e34f0894ed24b8b0ff6db2bd4218050d",
+    "record_count": 6000,
+    "image_count": 2058,
+    "ordered_record_key_sha256": "a1240067efcbd43611eef296e930243801afa1cb7a7be948bdd7b09d9b3e608a"
+  },
+  "thresholds": {
+    "mean_cosine_min": 0.9999,
+    "p01_cosine_min": 0.9995,
+    "minimum_cosine_min": 0.995,
+    "fraction_cosine_ge_0_999_min": 0.999,
+    "maximum_norm_error": 0.005
+  },
+  "constraints": {
+    "sam3_rerun": false,
+    "training": false,
+    "pixel_gt": false,
+    "validation_split": false,
+    "text_encoder": false,
+    "model_comparison": false
+  }
+}
+

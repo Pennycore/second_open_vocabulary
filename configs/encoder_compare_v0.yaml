@@ -1,0 +1,16 @@
+experiment:
+  name: encoder_compare_v0
+  seed: 42
+  overwrite: false
+
+paths:
+  pixel_pack: inputs/encoder_compare_pack_v0/run_20260813_001/pixel_pack
+  remoteclip_checkpoint: inputs/checkpoints/RemoteCLIP-ViT-B-32.pt
+  openai_clip_checkpoint: inputs/checkpoints/open_clip_pytorch_model.bin
+  remoteclip_bridge_summary: outputs/remoteclip_bridge_v0/run_20260813_001/summary.json
+  protocol_file: configs/encoder_compare_run_protocol_v0.json
+  output_root: outputs/encoder_compare_v0
+
+runtime:
+  device: auto
+  batch_regions: 64

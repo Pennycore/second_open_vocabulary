@@ -1,0 +1,93 @@
+{
+  "format_version": 1,
+  "role": "pre-result frozen paired encoder comparison",
+  "dataset": "LoveDA",
+  "split": "train",
+  "seed": 42,
+  "remoteclip_bridge_gate": {
+    "summary_sha256": "f36a5b8b1e38f3083f9df8735853ff27cdb313d57f61290c012850e41faf8b9e",
+    "required_status": "passed",
+    "required_bundle_id": "741d467c8b264f8bf4d5a683bd8e1440e34f0894ed24b8b0ff6db2bd4218050d"
+  },
+  "pixel_pack": {
+    "bundle_id": "741d467c8b264f8bf4d5a683bd8e1440e34f0894ed24b8b0ff6db2bd4218050d",
+    "record_count": 6000,
+    "image_count": 2058,
+    "ordered_record_key_sha256": "a1240067efcbd43611eef296e930243801afa1cb7a7be948bdd7b09d9b3e608a"
+  },
+  "models": {
+    "remoteclip": {
+      "architecture": "ViT-B-32",
+      "checkpoint_sha256": "60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4",
+      "identity": "RemoteCLIP ViT-B/32"
+    },
+    "openai_clip": {
+      "architecture": "ViT-B-32-quickgelu",
+      "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+      "identity": "OpenAI CLIP ViT-B/32; OpenCLIP/timm converted state_dict",
+      "source_repo": "timm/vit_base_patch32_clip_224.openai",
+      "source_revision": "a6f597a30f7b82c51704746581f9a4e41421e878"
+    }
+  },
+  "software": {
+    "open_clip": "3.3.0",
+    "tokenizer": "OpenCLIP SimpleTokenizer selected by architecture",
+    "view_fusion": "each view L2, arithmetic mean, final L2"
+  },
+  "classes": ["building", "road", "water", "barren", "forest", "agriculture"],
+  "prompts": {
+    "group_a_templates": [
+      "{class}",
+      "a photo of {class}",
+      "an aerial image of {class}",
+      "a satellite image of {class}",
+      "a remote sensing image of {class}",
+      "{class} in an aerial image",
+      "{class} in a satellite image",
+      "a region of {class} viewed from above"
+    ],
+    "group_b_templates": ["{alias}", "an aerial image of {alias}", "a remote sensing image of {alias}"],
+    "aliases": {
+      "building": ["building", "buildings", "built-up area", "urban structures"],
+      "road": ["road", "roads", "street", "paved road"],
+      "water": ["water", "water body", "river or lake"],
+      "barren": ["barren land", "bare soil", "exposed ground"],
+      "forest": ["forest", "woodland", "dense tree-covered area"],
+      "agriculture": ["agriculture", "agricultural land", "cropland", "farmland", "cultivated field"]
+    },
+    "distractors": ["airport", "bridge", "railway", "parking lot", "ship", "wetland", "grassland", "industrial area", "residential area", "sports field", "mountain", "sand", "snow", "cloud", "vehicle"]
+  },
+  "evaluations": [
+    {"prompt_group": "A", "vocabulary": "closed"},
+    {"prompt_group": "A", "vocabulary": "expanded"},
+    {"prompt_group": "B", "vocabulary": "closed"},
+    {"prompt_group": "B", "vocabulary": "expanded"}
+  ],
+  "primary_endpoint": {
+    "metric": "macro SAM3-source agreement",
+    "prompt_group": "A",
+    "vocabulary": "closed",
+    "contrast": "openai_clip minus remoteclip",
+    "inference": "Rural/Urban-stratified image-clustered paired bootstrap",
+    "bootstrap_replicates": 10000,
+    "confidence_level": 0.95,
+    "decision": "OpenAI CLIP better only if CI lower bound > 0; RemoteCLIP better only if CI upper bound < 0; otherwise inconclusive"
+  },
+  "secondary_endpoints": [
+    "CAM weak-label agreement",
+    "three-way CAM/SAM3/text agreement",
+    "expanded-vocabulary distractor prediction rate",
+    "per-class SAM3-source agreement",
+    "Group B prompt construction"
+  ],
+  "constraints": {
+    "sam3_rerun": false,
+    "training": false,
+    "pixel_gt": false,
+    "validation_split": false,
+    "same_regions": true,
+    "encoder_matched_image_and_text_towers": true,
+    "cross_encoder_feature_reuse": false,
+    "claims_true_accuracy": false
+  }
+}

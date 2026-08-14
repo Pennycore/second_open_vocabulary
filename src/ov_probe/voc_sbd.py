@@ -6,6 +6,7 @@ import os
 import shutil
 import tarfile
 import uuid
+import xml.etree.ElementTree as ET
 from collections.abc import Iterable
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -90,6 +91,49 @@ def load_voc_image_level_tags(
         "segmentation_masks_read": False,
     }
     return tags, metadata
+
+
+def load_voc_xml_image_tags(
+    voc_root: Path,
+    image_ids: Iterable[str],
+    class_names: Iterable[str],
+) -> tuple[dict[str, tuple[str, ...]], dict[str, Any]]:
+    names = tuple(class_names)
+    allowed = set(names)
+    output: dict[str, tuple[str, ...]] = {}
+    difficult_objects = 0
+    for image_id in image_ids:
+        if "/" in image_id or "\\" in image_id or image_id in {".", ".."}:
+            raise DatasetPreparationError(f"Unsafe VOC XML image ID: {image_id}")
+        path = voc_root / "Annotations" / f"{image_id}.xml"
+        if not path.is_file() or path.is_symlink():
+            raise DatasetPreparationError(f"Missing VOC XML annotation: {path}")
+        raw = path.read_bytes()
+        upper = raw.upper()
+        if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+            raise DatasetPreparationError(f"Unsafe XML declaration in {path}")
+        root = ET.fromstring(raw)
+        filename = root.findtext("filename")
+        if filename is not None and Path(filename).stem != image_id:
+            raise DatasetPreparationError(f"VOC XML filename mismatch: {path}")
+        present: set[str] = set()
+        for obj in root.findall("object"):
+            name = (obj.findtext("name") or "").strip()
+            if name not in allowed:
+                raise DatasetPreparationError(f"Unknown VOC XML class {name!r} in {path}")
+            difficult_raw = (obj.findtext("difficult") or "0").strip()
+            if difficult_raw not in {"0", "1"}:
+                raise DatasetPreparationError(f"Invalid difficult flag in {path}")
+            difficult_objects += difficult_raw == "1"
+            present.add(name)
+        if not present:
+            raise DatasetPreparationError(f"VOC XML contains no registered objects: {path}")
+        output[image_id] = tuple(name for name in names if name in present)
+    return output, {
+        "image_count": len(output),
+        "difficult_objects_included": difficult_objects,
+        "segmentation_masks_read": False,
+    }
 
 
 def file_digest(path: Path, algorithm: str = "sha256") -> str:
@@ -353,6 +397,7 @@ def export_voc_segmentation_train_tags(
     *,
     output_name: str = "voc_segmentation_train_tags_v0",
     code_commit: str | None = None,
+    protocol_path: Path | None = None,
 ) -> dict[str, Any]:
     """Export mask-free image tags for the VOC segmentation train IDs."""
     root = dataset_root.resolve()
@@ -369,13 +414,40 @@ def export_voc_segmentation_train_tags(
         raise DatasetPreparationError("Dataset preparation did not preserve the no-pixel-read boundary.")
 
     names = tuple(class_names)
+    tag_protocol_identity: dict[str, Any] = {}
+    expected_fallback: int | None = None
+    expected_records: int | None = None
+    if protocol_path is not None:
+        protocol = protocol_path.resolve()
+        if not protocol.is_file() or protocol.is_symlink():
+            raise DatasetPreparationError("VOC tag protocol is not a regular file.")
+        raw_protocol = protocol.read_bytes()
+        protocol_payload = json.loads(raw_protocol.decode("utf-8"))
+        if protocol_payload.get("status") != "frozen_before_successful_export":
+            raise DatasetPreparationError("VOC tag protocol is not frozen.")
+        if protocol_payload.get("dataset_id") != "voc2012_sbd":
+            raise DatasetPreparationError("VOC tag protocol dataset mismatch.")
+        expected_fallback = int(protocol_payload["sources"]["expected_fallback_image_count"])
+        expected_records = int(protocol_payload["expected_record_count"])
+        tag_protocol_identity = {
+            "name": protocol.name,
+            "sha256": hashlib.sha256(raw_protocol).hexdigest(),
+        }
     all_tags, tag_metadata = load_voc_image_level_tags(voc, names)
     segmentation_split = voc / "ImageSets" / "Segmentation" / "train.txt"
     segmentation_ids = read_split(segmentation_split)
+    if expected_records is not None and len(segmentation_ids) != expected_records:
+        raise DatasetPreparationError(
+            f"VOC segmentation train count differs from protocol: {len(segmentation_ids)} != {expected_records}"
+        )
     missing = [image_id for image_id in segmentation_ids if image_id not in all_tags]
-    if missing:
-        raise DatasetPreparationError(f"VOC segmentation train IDs missing classification labels: {len(missing)}")
-    empty = [image_id for image_id in segmentation_ids if not all_tags[image_id]]
+    if expected_fallback is not None and len(missing) != expected_fallback:
+        raise DatasetPreparationError(
+            f"VOC XML fallback count differs from protocol: {len(missing)} != {expected_fallback}"
+        )
+    xml_tags, xml_metadata = load_voc_xml_image_tags(voc, missing, names)
+    merged_tags = {image_id: all_tags.get(image_id, xml_tags.get(image_id, ())) for image_id in segmentation_ids}
+    empty = [image_id for image_id in segmentation_ids if not merged_tags[image_id]]
     if empty:
         raise DatasetPreparationError(f"VOC segmentation train IDs without positive tags: {len(empty)}")
 
@@ -392,7 +464,7 @@ def export_voc_segmentation_train_tags(
         digest = hashlib.sha256()
         with records_path.open("x", encoding="utf-8", newline="\n") as handle:
             for row_index, image_id in enumerate(segmentation_ids):
-                labels = all_tags[image_id]
+                labels = merged_tags[image_id]
                 for label in labels:
                     class_counts[label] += 1
                 record = {"row_index": row_index, "image_id": image_id, "class_names": list(labels)}
@@ -405,6 +477,7 @@ def export_voc_segmentation_train_tags(
         source_files = [
             segmentation_split,
             *[voc / "ImageSets" / "Main" / f"{name}_train.txt" for name in names],
+            *[voc / "Annotations" / f"{image_id}.xml" for image_id in missing],
         ]
         source_hashes = {
             str(path.relative_to(extracted)).replace("\\", "/"): file_digest(path, "sha256")
@@ -420,10 +493,14 @@ def export_voc_segmentation_train_tags(
             "class_positive_counts": class_counts,
             "difficult_policy": tag_metadata["difficult_policy"],
             "difficult_counts_in_full_voc_train": tag_metadata["difficult_counts"],
+            "classification_source_images": len(segmentation_ids) - len(missing),
+            "xml_fallback_images": len(missing),
+            "xml_fallback_metadata": xml_metadata,
             "records_sha256": digest.hexdigest(),
             "dataset_manifest_sha256": hashlib.sha256(dataset_manifest_bytes).hexdigest(),
             "source_file_sha256": source_hashes,
             "code_commit": code_commit,
+            "tag_protocol": tag_protocol_identity,
             "segmentation_masks_read": False,
             "voc_val_read": False,
         }

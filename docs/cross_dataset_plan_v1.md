@@ -36,7 +36,7 @@ optional student（门禁通过后才训练）
 - 下载文件绑定官方MD5与SHA-256；VOC主压缩包使用公开镜像加速，但最终字节必须通过VOC官方MD5。
 - 解包进入全新staging目录，拒绝绝对路径、`..`、反斜杠、链接、设备文件和已有输出覆盖；通过split审计后再原子改名。
 - 弱训练不直接读取训练像素掩码；若图像标签由标注派生，必须披露。
-- VOC train的初始图像级标签取自官方 `ImageSets/Main/<class>_train.txt`；`0`（only difficult）按“类别存在”处理，且不读取分割掩码。
+- VOC train的初始图像级标签优先取自官方 `ImageSets/Main/<class>_train.txt`；该分类split未覆盖的313张segmentation-train新增图像，仅从同一官方包的XML目标类别字段补齐。分类标签`0`（only difficult）和XML difficult目标都按“类别存在”处理，且不读取分割掩码。
 - VOC2012 val不进入SBD增强训练。
 - 先运行固定小样本的RemoteCLIP桥接和无训练region-text探针，再决定是否生成全量候选。
 

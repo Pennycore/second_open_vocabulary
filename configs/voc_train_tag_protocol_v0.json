@@ -1,0 +1,27 @@
+{
+  "format_version": 1,
+  "status": "frozen_before_successful_export",
+  "dataset_id": "voc2012_sbd",
+  "output_split": "voc2012_segmentation_train",
+  "expected_record_count": 1464,
+  "sources": {
+    "primary": "VOCdevkit/VOC2012/ImageSets/Main/<class>_train.txt",
+    "fallback": "VOCdevkit/VOC2012/Annotations/<image_id>.xml",
+    "fallback_only_when_missing_from_classification_train": true,
+    "expected_fallback_image_count": 313
+  },
+  "label_policy": {
+    "classification_positive": 1,
+    "classification_difficult_zero": "positive_presence",
+    "xml_object_difficult": "positive_presence",
+    "xml_fields_read": ["filename", "object/name", "object/difficult"],
+    "segmentation_masks_read": false,
+    "voc_val_read": false
+  },
+  "failure_policy": {
+    "unknown_class": "reject",
+    "missing_or_empty_tags": "reject",
+    "duplicate_or_reordered_ids": "reject",
+    "overwrite": false
+  }
+}

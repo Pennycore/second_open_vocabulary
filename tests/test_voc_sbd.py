@@ -13,6 +13,7 @@ from ov_probe.voc_sbd import (
     export_voc_segmentation_train_tags,
     inspect_archive,
     load_voc_image_level_tags,
+    load_voc_xml_image_tags,
 )
 
 
@@ -130,3 +131,17 @@ def test_preparation_protocol_identity_is_fail_closed(tmp_path: Path) -> None:
 def test_tag_export_requires_completed_dataset_manifest(tmp_path: Path) -> None:
     with pytest.raises(DatasetPreparationError, match="completed dataset manifest"):
         export_voc_segmentation_train_tags(tmp_path, ["cat"], code_commit="abc")
+
+
+def test_voc_xml_tags_read_only_object_names(tmp_path: Path) -> None:
+    annotations = tmp_path / "Annotations"
+    annotations.mkdir()
+    (annotations / "a.xml").write_text(
+        "<annotation><filename>a.jpg</filename><object><name>cat</name><difficult>1</difficult>"
+        "<bndbox><xmin>1</xmin></bndbox></object></annotation>",
+        encoding="utf-8",
+    )
+    tags, metadata = load_voc_xml_image_tags(tmp_path, ["a"], ["cat", "dog"])
+    assert tags == {"a": ("cat",)}
+    assert metadata["difficult_objects_included"] == 1
+    assert metadata["segmentation_masks_read"] is False

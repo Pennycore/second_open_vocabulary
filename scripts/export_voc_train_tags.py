@@ -22,6 +22,7 @@ def main() -> int:
         args.dataset_root,
         spec.class_names,
         code_commit=commit,
+        protocol_path=project_root / "configs" / "voc_train_tag_protocol_v0.json",
     )
     print(json.dumps(manifest, indent=2, sort_keys=True))
     return 0

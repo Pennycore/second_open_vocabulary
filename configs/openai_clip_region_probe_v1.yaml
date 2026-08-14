@@ -1,0 +1,13 @@
+experiment:
+  name: openai_clip_region_probe_v1
+  overwrite: false
+
+paths:
+  pixel_pack: inputs/encoder_compare_pack_v0/run_20260814_001/pixel_pack
+  openai_clip_checkpoint: inputs/checkpoints/open_clip_pytorch_model.bin
+  protocol_file: configs/openai_clip_region_probe_protocol_v1.json
+  output_root: outputs/openai_clip_region_probe_v1
+
+runtime:
+  device: auto
+  batch_regions: 64

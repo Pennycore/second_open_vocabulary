@@ -1,0 +1,66 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "role": "OpenAI-CLIP-only frozen LoveDA region-text diagnostic",
+  "dataset": "LoveDA",
+  "split": "train",
+  "seed": 42,
+  "pixel_pack": {
+    "bundle_id": "abb886a04bd6e42402a16e9c98357978142911f33c0f01ed0573fe3734e69b71",
+    "record_count": 6000,
+    "image_count": 2058,
+    "ordered_record_key_sha256": "a1240067efcbd43611eef296e930243801afa1cb7a7be948bdd7b09d9b3e608a"
+  },
+  "model": {
+    "identity": "OpenAI CLIP ViT-B/32 quick-GELU; OpenCLIP/timm converted state_dict",
+    "architecture": "ViT-B-32-quickgelu",
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "feature_dimension": 512,
+    "open_clip_version": "3.3.0",
+    "load_policy": "weights_only=True, strict=True, eval mode"
+  },
+  "software": {
+    "view_fusion": "L2 each view, arithmetic mean, L2 fused result",
+    "image_preprocess": "OpenCLIP transform selected by ViT-B-32-quickgelu",
+    "tokenizer": "OpenCLIP SimpleTokenizer selected by ViT-B-32-quickgelu"
+  },
+  "classes": ["building", "road", "water", "barren", "forest", "agriculture"],
+  "prompts": {
+    "group_a_templates": [
+      "{class}", "a photo of {class}", "an aerial image of {class}", "a satellite image of {class}",
+      "a remote sensing image of {class}", "{class} in an aerial image", "{class} in a satellite image", "a region of {class} viewed from above"
+    ],
+    "group_b_templates": ["{alias}", "an aerial image of {alias}", "a remote sensing image of {alias}"],
+    "aliases": {
+      "building": ["building", "buildings", "built-up area", "urban structures"],
+      "road": ["road", "roads", "street", "paved road"],
+      "water": ["water", "water body", "river or lake"],
+      "barren": ["barren land", "bare soil", "exposed ground"],
+      "forest": ["forest", "woodland", "dense tree-covered area"],
+      "agriculture": ["agriculture", "agricultural land", "cropland", "farmland", "cultivated field"]
+    },
+    "distractors": ["airport", "bridge", "railway", "parking lot", "ship", "wetland", "grassland", "industrial area", "residential area", "sports field", "mountain", "sand", "snow", "cloud", "vehicle"]
+  },
+  "evaluations": [
+    {"prompt_group": "A", "vocabulary": "closed"},
+    {"prompt_group": "A", "vocabulary": "expanded"},
+    {"prompt_group": "B", "vocabulary": "closed"},
+    {"prompt_group": "B", "vocabulary": "expanded"}
+  ],
+  "primary_endpoint": {
+    "metric": "macro SAM3-source weak-label agreement",
+    "prompt_group": "A",
+    "vocabulary": "closed",
+    "interpretation": "descriptive agreement on a SAM3-source-balanced, single-seed sample; not true accuracy or segmentation"
+  },
+  "constraints": {
+    "sam3_rerun": false,
+    "training": false,
+    "pixel_gt": false,
+    "validation_split": false,
+    "encoder_matched_image_and_text_towers": true,
+    "remoteclip_feature_or_text_reuse": false,
+    "claims_true_accuracy": false,
+    "claims_segmentation_quality": false
+  }
+}

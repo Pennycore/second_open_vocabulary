@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "status": "voc2012_sbd_data_preparation_in_progress",
+  "status": "voc2012_sbd_data_prepared",
   "objective": "dataset-agnostic OV-WSSS across remote-sensing and natural-image domains",
   "benchmark_order": ["voc2012_sbd", "loveda", "coco2014"],
   "benchmark_roles": {
@@ -50,10 +50,10 @@
     ]
   },
   "current_decision": {
-    "download_now": "voc2012_and_sbd_only",
+    "download_now": "voc2012_and_sbd_complete",
     "train_now": false,
     "next_dataset": "voc2012_sbd",
-    "next_action": "verify archives, safely extract into a new directory, and audit train_noval before any model run",
+    "next_action": "export mask-free VOC train image tags and run a frozen no-training encoder sanity check before proposal generation",
     "download_coco_now": false
   }
 }

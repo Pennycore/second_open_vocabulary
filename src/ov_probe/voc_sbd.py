@@ -345,3 +345,96 @@ def prepare_voc_sbd(
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
         raise
+
+
+def export_voc_segmentation_train_tags(
+    dataset_root: Path,
+    class_names: Iterable[str],
+    *,
+    output_name: str = "voc_segmentation_train_tags_v0",
+    code_commit: str | None = None,
+) -> dict[str, Any]:
+    """Export mask-free image tags for the VOC segmentation train IDs."""
+    root = dataset_root.resolve()
+    extracted = root / "extracted"
+    voc = extracted / "VOCdevkit" / "VOC2012"
+    dataset_manifest_path = extracted / "dataset_manifest.json"
+    if not dataset_manifest_path.is_file() or dataset_manifest_path.is_symlink():
+        raise DatasetPreparationError("A completed dataset manifest is required before tag export.")
+    dataset_manifest_bytes = dataset_manifest_path.read_bytes()
+    dataset_manifest = json.loads(dataset_manifest_bytes.decode("utf-8"))
+    if dataset_manifest.get("status") != "complete":
+        raise DatasetPreparationError("Dataset preparation is not complete.")
+    if dataset_manifest.get("audit", {}).get("pixel_annotation_values_read") is not False:
+        raise DatasetPreparationError("Dataset preparation did not preserve the no-pixel-read boundary.")
+
+    names = tuple(class_names)
+    all_tags, tag_metadata = load_voc_image_level_tags(voc, names)
+    segmentation_split = voc / "ImageSets" / "Segmentation" / "train.txt"
+    segmentation_ids = read_split(segmentation_split)
+    missing = [image_id for image_id in segmentation_ids if image_id not in all_tags]
+    if missing:
+        raise DatasetPreparationError(f"VOC segmentation train IDs missing classification labels: {len(missing)}")
+    empty = [image_id for image_id in segmentation_ids if not all_tags[image_id]]
+    if empty:
+        raise DatasetPreparationError(f"VOC segmentation train IDs without positive tags: {len(empty)}")
+
+    derived = root / "derived"
+    derived.mkdir(exist_ok=True)
+    final = derived / output_name
+    if final.exists():
+        raise DatasetPreparationError(f"Refusing to overwrite existing tag export: {final}")
+    staging = derived / f".{output_name}.staging-{uuid.uuid4().hex}"
+    staging.mkdir()
+    try:
+        records_path = staging / "records.jsonl"
+        class_counts = {name: 0 for name in names}
+        digest = hashlib.sha256()
+        with records_path.open("x", encoding="utf-8", newline="\n") as handle:
+            for row_index, image_id in enumerate(segmentation_ids):
+                labels = all_tags[image_id]
+                for label in labels:
+                    class_counts[label] += 1
+                record = {"row_index": row_index, "image_id": image_id, "class_names": list(labels)}
+                line = json.dumps(record, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
+                handle.write(line)
+                digest.update(line.encode("utf-8"))
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        source_files = [
+            segmentation_split,
+            *[voc / "ImageSets" / "Main" / f"{name}_train.txt" for name in names],
+        ]
+        source_hashes = {
+            str(path.relative_to(extracted)).replace("\\", "/"): file_digest(path, "sha256")
+            for path in source_files
+        }
+        manifest = {
+            "schema_version": 1,
+            "status": "complete",
+            "dataset_id": "voc2012_sbd",
+            "split": "voc2012_segmentation_train",
+            "record_count": len(segmentation_ids),
+            "class_names": list(names),
+            "class_positive_counts": class_counts,
+            "difficult_policy": tag_metadata["difficult_policy"],
+            "difficult_counts_in_full_voc_train": tag_metadata["difficult_counts"],
+            "records_sha256": digest.hexdigest(),
+            "dataset_manifest_sha256": hashlib.sha256(dataset_manifest_bytes).hexdigest(),
+            "source_file_sha256": source_hashes,
+            "code_commit": code_commit,
+            "segmentation_masks_read": False,
+            "voc_val_read": False,
+        }
+        _write_json_exclusive(staging / "manifest.json", manifest)
+        os.replace(staging, final)
+        directory_fd = os.open(derived, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+        return manifest
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise

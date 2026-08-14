@@ -40,7 +40,9 @@ optional student（门禁通过后才训练）
 - VOC2012 val不进入SBD增强训练。
 - 先运行固定小样本的RemoteCLIP桥接和无训练region-text探针，再决定是否生成全量候选。
 
-当前执行状态（2026-08-13）：VOC2012压缩包已通过官方MD5；SBD从官方源并行下载中；安全准备器、标签adapter及其协议已在3090环境通过40项测试。尚未读取像素标注值、运行SAM3、生成候选或启动训练。
+当前执行状态（2026-08-14）：VOC2012、SBD和官方 `train_noval.txt` 均已通过注册MD5并安全解包。审计得到VOC图像17,125张、分割train/val为1,464/1,449；SBD图像和类别MAT各11,355份，原始train/val为8,498/2,857，官方 `train_noval` 为5,623且与VOC2012 val交集为0。安全准备器、标签adapter及其协议在3090环境通过40项测试。整个准备阶段未读取像素标注值、运行SAM3、生成候选或启动训练。
+
+这里的5,623张官方 `train_noval` 不得写成常见的10,582张VOC `train_aug`。若后续采用10,582张增强训练池，必须另行冻结“全部SBD标注图像减VOC val”的构造规则、ID清单和哈希，并作为不同split报告。当前先用VOC segmentation train的1,464张做低成本、无训练sanity check。
 
 ## COCO执行边界
 

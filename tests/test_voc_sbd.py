@@ -10,6 +10,7 @@ from ov_probe.voc_sbd import (
     DatasetPreparationError,
     audit_extracted_dataset,
     extract_archive_safely,
+    export_voc_segmentation_train_tags,
     inspect_archive,
     load_voc_image_level_tags,
 )
@@ -124,3 +125,8 @@ def test_preparation_protocol_identity_is_fail_closed(tmp_path: Path) -> None:
     )
     with pytest.raises(DatasetPreparationError, match="does not match registered artifacts"):
         prepare_voc_sbd(tmp_path / "dataset", protocol_path=protocol, code_commit="abc")
+
+
+def test_tag_export_requires_completed_dataset_manifest(tmp_path: Path) -> None:
+    with pytest.raises(DatasetPreparationError, match="completed dataset manifest"):
+        export_voc_segmentation_train_tags(tmp_path, ["cat"], code_commit="abc")

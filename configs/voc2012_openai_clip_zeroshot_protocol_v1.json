@@ -1,0 +1,59 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "role": "PASCAL VOC 2012 validation-image OpenAI-CLIP zero-shot score cache; input-only and no evaluation",
+  "scientific_evidence": false,
+  "dataset": {
+    "name": "PASCAL VOC 2012",
+    "split": "Segmentation val",
+    "manifest_sha256": "8c2ec1b7a115f2d0b4892b8ef3dfa80d8a863488b449769c02e642295f965a6c",
+    "archive_md5": "6cd6e144f989b92b3379bac3b3de84fd",
+    "val_image_count": 1449
+  },
+  "model": {
+    "identity": "OpenAI CLIP ViT-B/32 quick-GELU; OpenCLIP/timm converted state_dict",
+    "architecture": "ViT-B-32-quickgelu",
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "feature_dimension": 512,
+    "open_clip_version": "3.3.0",
+    "load_policy": "weights_only=True, strict=True, eval mode"
+  },
+  "classes": [
+    "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
+    "dining table", "dog", "horse", "motorbike", "person", "potted plant", "sheep", "sofa", "train", "tv monitor"
+  ],
+  "prompts": {
+    "group_a_templates": [
+      "{class}", "a photo of {class}", "an aerial image of {class}", "a satellite image of {class}",
+      "a remote sensing image of {class}", "{class} in an aerial image", "{class} in a satellite image", "a region of {class} viewed from above"
+    ]
+  },
+  "scoring": {
+    "text_prototype": "L2 normalize each fixed Group A prompt embedding, arithmetic mean by class, then L2 normalize each class prototype",
+    "image_feature": "OpenCLIP preprocess each immutable val JPEG, encode image, then L2 normalize",
+    "score": "cosine(image_feature, text_prototype)",
+    "dtype": "float32",
+    "shape": [1449, 20]
+  },
+  "constraints": {
+    "network_download": false,
+    "semantic_label_read_or_decode": false,
+    "detection_label_read_or_decode": false,
+    "class_specific_file_read": false,
+    "ground_truth_retrieval": false,
+    "thresholds": false,
+    "predictions": false,
+    "metrics": false,
+    "class_selection": false,
+    "prompt_selection": false,
+    "prototype_selection": false,
+    "sam3_rerun": false,
+    "training": false,
+    "overwrite": false
+  },
+  "output": {
+    "score_file": "scores_openai_clip.npy",
+    "image_id_file": "image_ids.json",
+    "image_feature_stats_file": "image_feature_stats.json"
+  }
+}

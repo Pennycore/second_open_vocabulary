@@ -1,0 +1,16 @@
+experiment:
+  name: voc2012_openai_clip_zeroshot_v1
+  overwrite: false
+
+paths:
+  # The tracked configuration deliberately has no server-local image or checkpoint paths.
+  # An ignored deployment config may provide project-contained relative paths.
+  dataset_manifest: null
+  raw_data_root: null
+  openai_clip_checkpoint: null
+  protocol_file: configs/voc2012_openai_clip_zeroshot_protocol_v1.json
+  output_root: outputs/voc2012_openai_clip_zeroshot_v1
+
+runtime:
+  device: auto
+  batch_images: 32

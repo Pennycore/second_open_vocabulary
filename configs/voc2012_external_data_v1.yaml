@@ -1,0 +1,11 @@
+experiment:
+  name: voc2012_external_data_v1
+  overwrite: false
+
+paths:
+  # The tracked configuration deliberately has no local data location.  A
+  # deployment-only ignored copy may set both values to project-contained paths.
+  archive_file: null
+  raw_data_root: null
+  protocol_file: configs/voc2012_external_data_protocol_v1.json
+  output_root: outputs/voc2012_external_data_v1

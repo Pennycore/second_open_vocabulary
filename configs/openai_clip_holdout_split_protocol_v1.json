@@ -1,0 +1,33 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "role": "Deterministic image-disjoint development and heldout partition for later OpenAI-CLIP strategy development",
+  "scientific_evidence": false,
+  "no_model_computation": true,
+  "dataset": "LoveDA",
+  "split": "train",
+  "pixel_pack": {
+    "bundle_id": "abb886a04bd6e42402a16e9c98357978142911f33c0f01ed0573fe3734e69b71",
+    "record_count": 6000,
+    "image_count": 2058,
+    "ordered_record_key_sha256": "a1240067efcbd43611eef296e930243801afa1cb7a7be948bdd7b09d9b3e608a"
+  },
+  "classes": ["building", "road", "water", "barren", "forest", "agriculture"],
+  "partition": {
+    "seed": 42,
+    "grouping_key": "image_id",
+    "development_image_count": 1647,
+    "heldout_image_count": 411,
+    "ranking_rule": "For every distinct image_id, compute sha256(f'{seed}:{image_id}') as lowercase hexadecimal text, sort image_ids by that digest in lexicographic ascending order, assign the first 1647 image_ids to development and all remaining image_ids to heldout.",
+    "image_disjoint": true,
+    "require_all_sam3_source_labels_in_each_partition": true
+  },
+  "constraints": {
+    "sam3_rerun": false,
+    "training": false,
+    "model_computation": false,
+    "pixel_gt": false,
+    "validation_split": false,
+    "overwrite": false
+  }
+}

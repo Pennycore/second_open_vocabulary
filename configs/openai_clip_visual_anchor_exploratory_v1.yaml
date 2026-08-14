@@ -1,0 +1,19 @@
+experiment:
+  name: openai_clip_visual_anchor_exploratory_v1
+  overwrite: false
+
+paths:
+  feature_cache_manifest: outputs/openai_clip_feature_cache_v1/run_20260814_001/manifest.json
+  features: outputs/openai_clip_feature_cache_v1/run_20260814_001/features_openai_clip.npy
+  row_partitions: outputs/openai_clip_feature_cache_v1/run_20260814_001/row_partitions.jsonl
+  split_manifest: outputs/openai_clip_holdout_split_v1/run_20260814_002/manifest.json
+  development_records: outputs/openai_clip_holdout_split_v1/run_20260814_002/development_records.jsonl
+  heldout_records: outputs/openai_clip_holdout_split_v1/run_20260814_002/heldout_records.jsonl
+  # This tracked base config is deliberately non-runnable. Use an ignored deployment
+  # config with the audited local checkpoint path.
+  openai_clip_checkpoint: null
+  protocol_file: configs/openai_clip_visual_anchor_exploratory_protocol_v1.json
+  output_root: outputs/openai_clip_visual_anchor_exploratory_v1
+
+runtime:
+  device: auto

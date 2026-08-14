@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "role": "infrastructure cache; no strategy evaluation",
+  "scientific_evidence": false,
+  "dataset": "LoveDA",
+  "split": "train",
+  "pixel_pack": {
+    "bundle_id": "abb886a04bd6e42402a16e9c98357978142911f33c0f01ed0573fe3734e69b71",
+    "record_count": 6000,
+    "image_count": 2058,
+    "ordered_record_key_sha256": "a1240067efcbd43611eef296e930243801afa1cb7a7be948bdd7b09d9b3e608a"
+  },
+  "split_inputs": {
+    "manifest_sha256": "0ca05cc6e01f83c537ae22f665b5296a590aaa55a09b839e2321bae07e45d39e",
+    "development_records_sha256": "60e36878456ca0625b870de20adea8ac8d351576e9b976b325ee02a7e63692bc",
+    "heldout_records_sha256": "1b9fd6d0d5f108c4a5639e84431f9ab4573a6d1a9c7d7938906de3ea1cdc9734",
+    "development_partition": "development",
+    "heldout_partition": "heldout",
+    "image_disjoint": true,
+    "coverage": "every frozen pixel-pack (image_id,candidate_index) key exactly once"
+  },
+  "model": {
+    "identity": "OpenAI CLIP ViT-B/32 quick-GELU; OpenCLIP/timm converted state_dict",
+    "architecture": "ViT-B-32-quickgelu",
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "feature_dimension": 512,
+    "open_clip_version": "3.3.0",
+    "load_policy": "weights_only=True, strict=True, eval mode"
+  },
+  "software": {
+    "view_fusion": "L2 each view, arithmetic mean, L2 fused result",
+    "image_preprocess": "OpenCLIP transform selected by ViT-B-32-quickgelu"
+  },
+  "output": {
+    "feature_file": "features_openai_clip.npy",
+    "feature_dtype": "float16",
+    "feature_shape": [6000, 512],
+    "row_partition_file": "row_partitions.jsonl",
+    "row_partition_fields": ["row_index", "image_id", "candidate_index", "partition"]
+  },
+  "constraints": {
+    "sam3_rerun": false,
+    "training": false,
+    "pixel_gt": false,
+    "validation_split": false,
+    "remoteclip_feature_or_text_reuse": false,
+    "weak_labels_used_for_cache": false,
+    "predictions": false,
+    "similarity_scores": false,
+    "metrics": false,
+    "model_selection_or_decision": false,
+    "overwrite": false
+  }
+}

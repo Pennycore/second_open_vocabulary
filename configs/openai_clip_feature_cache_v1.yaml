@@ -1,0 +1,18 @@
+experiment:
+  name: openai_clip_feature_cache_v1
+  overwrite: false
+
+paths:
+  pixel_pack: inputs/encoder_compare_pack_v0/run_20260814_001/pixel_pack
+  split_manifest: outputs/openai_clip_holdout_split_v1/run_20260814_002/manifest.json
+  development_records: outputs/openai_clip_holdout_split_v1/run_20260814_002/development_records.jsonl
+  heldout_records: outputs/openai_clip_holdout_split_v1/run_20260814_002/heldout_records.jsonl
+  # This tracked base config is deliberately non-runnable. Copy it to an ignored
+  # deployment config and supply the audited local checkpoint path there.
+  openai_clip_checkpoint: null
+  protocol_file: configs/openai_clip_feature_cache_protocol_v1.json
+  output_root: outputs/openai_clip_feature_cache_v1
+
+runtime:
+  device: auto
+  batch_regions: 64

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
@@ -13,6 +14,38 @@ from .pixel_pack import validate_region_pixel_pack
 
 
 _REQUIRED_ROW_FIELDS = {"image_id", "candidate_index", "sam3_source_label"}
+
+
+def _is_link_or_junction(path: Path) -> bool:
+    """Return whether *path* is a link-like directory entry on this platform."""
+    if path.is_symlink():
+        return True
+    isjunction = getattr(os.path, "isjunction", None)
+    return bool(isjunction is not None and isjunction(path))
+
+
+def _prepare_empty_destination(output_dir: str | Path) -> tuple[Path, bool]:
+    """Validate a destination and say whether it must be created later.
+
+    Command-line runners reserve a run directory before invoking this module.  That
+    reservation is safe to use only when it is an ordinary, completely empty
+    directory.  Every later output is still created exclusively.
+    """
+    requested = Path(output_dir)
+    if _is_link_or_junction(requested):
+        raise InputValidationError("Split output directory may not be a symlink or junction.")
+    destination = requested.resolve()
+    if not destination.exists():
+        return destination, True
+    if _is_link_or_junction(destination) or not destination.is_dir():
+        raise InputValidationError("Split output destination must be an ordinary directory.")
+    try:
+        next(destination.iterdir())
+    except StopIteration:
+        return destination, False
+    except OSError as exc:
+        raise InputValidationError("Cannot verify that split output directory is empty.") from exc
+    raise InputValidationError("Split output directory must be empty when it already exists.")
 
 
 def _ordered_key_sha256(records: Iterable[dict[str, Any]]) -> str:
@@ -105,9 +138,7 @@ def create_holdout_split(
 ) -> dict[str, Any]:
     """Validate the immutable package and create one new split directory."""
     package = Path(pixel_pack).resolve()
-    destination = Path(output_dir).resolve()
-    if destination.exists():
-        raise InputValidationError("Split output directory must not already exist.")
+    destination, must_create_destination = _prepare_empty_destination(output_dir)
     validation = validate_region_pixel_pack(package, package / "encoder_compare_protocol_v0.json")
     registered = protocol.get("pixel_pack", {})
     for field in ("bundle_id", "record_count", "image_count", "ordered_record_key_sha256"):
@@ -130,7 +161,8 @@ def create_holdout_split(
         labels = {str(row["sam3_source_label"]) for row in subset}
         if labels != expected_classes:
             raise InputValidationError(f"{name} partition does not contain exactly the frozen SAM3 label set.")
-    destination.mkdir(parents=True, exist_ok=False)
+    if must_create_destination:
+        destination.mkdir(parents=True, exist_ok=False)
     development_path = destination / "development_records.jsonl"
     heldout_path = destination / "heldout_records.jsonl"
     _write_jsonl(development_path, development)

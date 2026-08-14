@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 import pytest
 
@@ -58,6 +59,60 @@ def test_create_rejects_class_missing_partition(tmp_path, monkeypatch) -> None:
     }
     with pytest.raises(InputValidationError, match="SAM3 label"):
         openai_clip_holdout_split.create_holdout_split(package, protocol, tmp_path / "output")
+
+
+def _valid_create_inputs(tmp_path, monkeypatch):
+    labels = ["building", "road", "water", "barren", "forest", "agriculture"]
+    rows = [
+        {
+            "image_id": f"image-{image_index:03d}",
+            "candidate_index": label_index,
+            "sam3_source_label": label,
+        }
+        for image_index in range(24)
+        for label_index, label in enumerate(labels)
+    ]
+    package = tmp_path / "pixel_pack"
+    package.mkdir()
+    (package / "records.jsonl").write_text(
+        "".join(f"{json.dumps(row)}\n" for row in rows), encoding="utf-8"
+    )
+    validation = {
+        "bundle_id": "synthetic",
+        "record_count": len(rows),
+        "image_count": 24,
+        "ordered_record_key_sha256": openai_clip_holdout_split._ordered_key_sha256(rows),
+    }
+    monkeypatch.setattr(openai_clip_holdout_split, "validate_region_pixel_pack", lambda *_: validation)
+    protocol = {
+        "pixel_pack": validation,
+        "classes": labels,
+        "partition": {"seed": 42, "development_image_count": 12, "heldout_image_count": 12},
+    }
+    return package, protocol
+
+
+def test_create_allows_precreated_empty_output_directory(tmp_path, monkeypatch) -> None:
+    package, protocol = _valid_create_inputs(tmp_path, monkeypatch)
+    output = tmp_path / "reserved_run"
+    output.mkdir()
+
+    manifest = openai_clip_holdout_split.create_holdout_split(package, protocol, output)
+
+    assert manifest["status"] == "completed"
+    assert (output / "manifest.json").is_file()
+    assert (output / "development_records.jsonl").is_file()
+    assert (output / "heldout_records.jsonl").is_file()
+
+
+def test_create_rejects_precreated_nonempty_output_directory(tmp_path, monkeypatch) -> None:
+    package, protocol = _valid_create_inputs(tmp_path, monkeypatch)
+    output = tmp_path / "occupied_run"
+    output.mkdir()
+    (output / "existing.txt").write_text("protected", encoding="utf-8")
+
+    with pytest.raises(InputValidationError, match="empty"):
+        openai_clip_holdout_split.create_holdout_split(package, protocol, output)
 
 
 def test_repository_anchor_rejects_mismatched_protocol_hash(tmp_path, monkeypatch) -> None:

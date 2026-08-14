@@ -42,7 +42,7 @@ def _protocol() -> dict[str, object]:
     return {
         "status": "frozen_pre_result", "scientific_evidence": False,
         "role": "external PASCAL VOC 2012 validation-image acquisition and manifest only; no model evaluation",
-        "dataset": {"name": "PASCAL VOC 2012", "year": "2012", "image_domain": "natural imagery", "purpose": "external independent evaluation", "archive_url": "https://thor.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar", "archive_filename": "VOCtrainval_11-May-2012.tar", "archive_md5": "6cd6e144f989b92b3379bac3b3de84fd", "expected_trainval_image_count": 11530, "expected_val_id_count": 1449},
+        "dataset": {"name": "PASCAL VOC 2012", "year": "2012", "image_domain": "natural imagery", "purpose": "external independent evaluation", "archive_url": "https://thor.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar", "archive_filename": "VOCtrainval_11-May-2012.tar", "archive_md5": "6cd6e144f989b92b3379bac3b3de84fd", "official_trainval_image_count": 11530, "expected_archive_jpeg_count": 17125, "expected_val_id_count": 1449},
         "input_scope": {"allowed_split_list": "ImageSets/Segmentation/val.txt", "allowed_image_root": "JPEGImages", "quarantined_annotation_roots": ["SegmentationClass", "SegmentationObject", "Annotations"], "quarantined_class_specific_files": True},
         "constraints": {key: False for key in ("network_download", "semantic_label_read_or_decode", "detection_label_read_or_decode", "class_specific_file_read", "downstream_evaluation", "model_execution", "prompt_selection", "prototype_selection", "ground_truth_retrieval", "sam3_rerun", "training", "overwrite")},
         "sha256": "a" * 64,
@@ -70,12 +70,17 @@ def test_manifest_generation_uses_1449_id_fixture_and_only_jpegs(tmp_path: Path,
     protocol = _protocol()
     monkeypatch.setattr("ov_probe.voc2012_external_data.md5_file", lambda _: "6cd6e144f989b92b3379bac3b3de84fd")
     monkeypatch.setattr("ov_probe.voc2012_external_data._assert_untracked_data_root", lambda *_: None)
-    monkeypatch.setattr("ov_probe.voc2012_external_data._list_trainval_jpegs", lambda _: [Path("fixture.jpg")] * 11530)
+    monkeypatch.setattr("ov_probe.voc2012_external_data._list_trainval_jpegs", lambda _: [Path("fixture.jpg")] * 17125)
     manifest = create_voc2012_external_data_manifest(cfg, protocol, tmp_path / "out", tmp_path)
     assert manifest["val_split"]["id_count"] == 1449
     assert [entry["image_id"] for entry in manifest["model_input_files"]] == ids
     assert all(entry["path"].startswith("JPEGImages/") for entry in manifest["model_input_files"])
     assert manifest["quarantined_annotation_roots"] == ["SegmentationClass", "SegmentationObject", "Annotations"]
+    assert manifest["archive_jpeg_inventory"] == {
+        "jpeg_count": 17125,
+        "expected_archive_jpeg_count": 17125,
+        "official_trainval_image_count": 11530,
+    }
     annotation = raw / "Annotations" / f"{ids[0]}.xml"
     annotation.parent.mkdir()
     annotation.write_text("not read", encoding="utf-8")

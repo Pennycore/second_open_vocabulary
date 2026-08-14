@@ -136,7 +136,11 @@ def _validate_protocol(protocol: dict[str, Any]) -> None:
         "purpose": "external independent evaluation", "archive_filename": "VOCtrainval_11-May-2012.tar",
         "archive_md5": "6cd6e144f989b92b3379bac3b3de84fd",
         "archive_url": "https://thor.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar",
-        "expected_trainval_image_count": 11530, "expected_val_id_count": 1449,
+        # The VOC page's 11,530 statistic is retained for disclosure, but the
+        # downloaded trainval archive contains 17,125 JPEGs under JPEGImages.
+        # Only the latter is an inventory invariant for this archive.
+        "official_trainval_image_count": 11530, "expected_archive_jpeg_count": 17125,
+        "expected_val_id_count": 1449,
     }
     if any(dataset.get(key) != value for key, value in required_dataset.items()):
         raise InputValidationError("VOC protocol dataset registration differs from the frozen values.")
@@ -306,7 +310,7 @@ def create_voc2012_external_data_manifest(
         image = validate_voc_val_image_path(raw_root, image_root / f"{image_id}.jpg", image_id)
         images.append({"image_id": image_id, "path": (_JPEG_ROOT / image.name).as_posix(), "sha256": sha256_file(image)})
     trainval_images = _list_trainval_jpegs(image_root)
-    if len(trainval_images) != int(protocol["dataset"]["expected_trainval_image_count"]):
+    if len(trainval_images) != int(protocol["dataset"]["expected_archive_jpeg_count"]):
         raise InputValidationError("VOC JPEGImages count differs from the frozen protocol.")
     destination, must_create_destination = _prepare_empty_destination(output_dir)
     if must_create_destination:
@@ -331,7 +335,11 @@ def create_voc2012_external_data_manifest(
             "id_list": _VAL_LIST.as_posix(), "id_list_sha256": sha256_file(val_list),
             "id_count": len(val_ids), "canonical_id_sha256": _sha256_lines(val_ids),
         },
-        "trainval_jpeg_count": len(trainval_images),
+        "archive_jpeg_inventory": {
+            "jpeg_count": len(trainval_images),
+            "expected_archive_jpeg_count": protocol["dataset"]["expected_archive_jpeg_count"],
+            "official_trainval_image_count": protocol["dataset"]["official_trainval_image_count"],
+        },
         "model_input_files": images,
         "model_input_image_sha256_aggregate": _sha256_lines(image_lines),
         "quarantined_annotation_roots": list(_QUARANTINED_ROOTS),

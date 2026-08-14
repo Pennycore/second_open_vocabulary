@@ -11,7 +11,8 @@
     "archive_url": "https://thor.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar",
     "archive_filename": "VOCtrainval_11-May-2012.tar",
     "archive_md5": "6cd6e144f989b92b3379bac3b3de84fd",
-    "expected_trainval_image_count": 11530,
+    "official_trainval_image_count": 11530,
+    "expected_archive_jpeg_count": 17125,
     "expected_val_id_count": 1449
   },
   "input_scope": {

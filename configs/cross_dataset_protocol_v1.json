@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "status": "voc2012_sbd_data_prepared",
+  "status": "voc2012_mask_free_encoder_sanity_completed",
   "objective": "dataset-agnostic OV-WSSS across remote-sensing and natural-image domains",
   "benchmark_order": ["voc2012_sbd", "loveda", "coco2014"],
   "benchmark_roles": {
@@ -53,7 +53,7 @@
     "download_now": "voc2012_and_sbd_complete",
     "train_now": false,
     "next_dataset": "voc2012_sbd",
-    "next_action": "export mask-free VOC train image tags and run a frozen no-training encoder sanity check before proposal generation",
+    "next_action": "freeze a small class-agnostic proposal-provider engineering gate without SAM3 or training",
     "download_coco_now": false
   }
 }

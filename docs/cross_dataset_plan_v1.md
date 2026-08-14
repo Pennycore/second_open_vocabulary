@@ -44,6 +44,8 @@ optional student（门禁通过后才训练）
 
 这里的5,623张官方 `train_noval` 不得写成常见的10,582张VOC `train_aug`。若后续采用10,582张增强训练池，必须另行冻结“全部SBD标注图像减VOC val”的构造规则、ID清单和哈希，并作为不同split报告。当前先用VOC segmentation train的1,464张做低成本、无训练sanity check。
 
+无训练sanity check已完成：在同一1,464张VOC train整图和同一冻结prompt下，OpenAI CLIP macro AP为77.81%，RemoteCLIP为52.98%；OpenAI CLIP减RemoteCLIP的配对bootstrap差值为+24.62pp，95% CI [+22.46,+26.80]pp。该结果只支持“自然图像编码器优先CLIP”的域内选择，不是分割性能。LoveDA继续保留RemoteCLIP，核心pipeline通过encoder registry共享。
+
 ## COCO执行边界
 
 COCO不是原生语义分割标签格式。正式评估前必须冻结实例到语义标签的转换，明确crowd区域和不同类别实例重叠的处理。COCO下载与候选生成需要单独的存储和算力批准，不能随VOC自动启动。

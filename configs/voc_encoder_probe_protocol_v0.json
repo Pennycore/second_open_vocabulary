@@ -1,0 +1,74 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "dataset": "VOC2012",
+  "split": "segmentation_train",
+  "record_count": 1464,
+  "seed": 42,
+  "inputs": {
+    "tag_manifest_sha256": "698020f9ef6dad77d4f2c65ca30fafee25c6761d2b987af7ac2132e8052dfc23",
+    "tag_records_sha256": "ccfee3568667babda4f526483308f46e1ad85a6eaaebb263276c4a8791913542",
+    "dataset_manifest_sha256": "ef07c761c858caa8cc6da4a3877cdac9940126565a86b6b875b074cf09af13e9"
+  },
+  "models": {
+    "remoteclip": {
+      "architecture": "ViT-B-32",
+      "checkpoint_sha256": "60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4",
+      "identity": "RemoteCLIP ViT-B/32"
+    },
+    "openai_clip": {
+      "architecture": "ViT-B-32-quickgelu",
+      "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+      "identity": "OpenAI CLIP ViT-B/32; OpenCLIP/timm converted state_dict"
+    }
+  },
+  "class_text": {
+    "aeroplane": "aeroplane",
+    "bicycle": "bicycle",
+    "bird": "bird",
+    "boat": "boat",
+    "bottle": "bottle",
+    "bus": "bus",
+    "car": "car",
+    "cat": "cat",
+    "chair": "chair",
+    "cow": "cow",
+    "diningtable": "dining table",
+    "dog": "dog",
+    "horse": "horse",
+    "motorbike": "motorbike",
+    "person": "person",
+    "pottedplant": "potted plant",
+    "sheep": "sheep",
+    "sofa": "sofa",
+    "train": "train",
+    "tvmonitor": "television monitor"
+  },
+  "prompt_templates": [
+    "{class}",
+    "a photo of {class}",
+    "a photograph of {class}",
+    "an image containing {class}",
+    "a natural image of {class}"
+  ],
+  "primary_endpoint": {
+    "metric": "macro average precision over 20 image-level classes",
+    "contrast": "OpenAI CLIP minus RemoteCLIP",
+    "bootstrap": "paired image bootstrap",
+    "replicates": 2000,
+    "confidence_level": 0.95
+  },
+  "secondary_endpoints": [
+    "per-class average precision",
+    "mean per-image recall at the true tag count"
+  ],
+  "constraints": {
+    "training": false,
+    "sam_or_proposals": false,
+    "segmentation_masks": false,
+    "voc_val": false,
+    "encoder_matched_image_and_text_towers": true,
+    "claims_segmentation_quality": false,
+    "claims_open_vocabulary_segmentation": false
+  }
+}

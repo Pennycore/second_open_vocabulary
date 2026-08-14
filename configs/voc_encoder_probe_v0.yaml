@@ -1,0 +1,14 @@
+experiment:
+  name: voc_encoder_probe_v0
+  overwrite: false
+paths:
+  protocol_file: configs/voc_encoder_probe_protocol_v0.json
+  dataset_manifest: inputs/datasets/voc2012_sbd/extracted/dataset_manifest.json
+  tag_bundle: inputs/datasets/voc2012_sbd/derived/voc_segmentation_train_tags_v0
+  image_dir: inputs/datasets/voc2012_sbd/extracted/VOCdevkit/VOC2012/JPEGImages
+  remoteclip_checkpoint: inputs/checkpoints/RemoteCLIP-ViT-B-32.pt
+  openai_clip_checkpoint: inputs/checkpoints/open_clip_pytorch_model.bin
+  output_root: outputs/voc_encoder_probe_v0
+runtime:
+  device: auto
+  batch_images: 64

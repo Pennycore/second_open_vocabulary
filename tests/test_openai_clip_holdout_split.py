@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import hashlib
+
 import pytest
 
 from ov_probe.io import InputValidationError
 from ov_probe import openai_clip_holdout_split
 from ov_probe.openai_clip_holdout_split import split_records
+from scripts import create_openai_clip_holdout_split as holdout_runner
 
 
 def _records(image_count: int = 12) -> list[dict[str, object]]:
@@ -55,3 +58,21 @@ def test_create_rejects_class_missing_partition(tmp_path, monkeypatch) -> None:
     }
     with pytest.raises(InputValidationError, match="SAM3 label"):
         openai_clip_holdout_split.create_holdout_split(package, protocol, tmp_path / "output")
+
+
+def test_repository_anchor_rejects_mismatched_protocol_hash(tmp_path, monkeypatch) -> None:
+    protocol = tmp_path / "openai_clip_holdout_split_protocol_v1.json"
+    protocol.write_text('{"status":"frozen"}\n', encoding="utf-8")
+    monkeypatch.setattr(holdout_runner, "CANONICAL_PROTOCOL_PATH", protocol)
+
+    def fake_run_git(*args: str) -> str:
+        if args == ("rev-parse", "HEAD"):
+            return "a" * 40 + "\n"
+        assert args == ("status", "--porcelain", "--untracked-files=no")
+        return ""
+
+    monkeypatch.setattr(holdout_runner, "_run_git", fake_run_git)
+    actual_hash = hashlib.sha256(protocol.read_bytes()).hexdigest()
+    assert actual_hash != "b" * 64
+    with pytest.raises(InputValidationError, match="protocol hash"):
+        holdout_runner._verify_repository_anchor("a" * 40, "b" * 64)

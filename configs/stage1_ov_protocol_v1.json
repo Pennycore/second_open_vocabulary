@@ -1,0 +1,52 @@
+{
+  "format_version": 1,
+  "supersedes": "stage1_ov_protocol_v0.json",
+  "status": "registered_design_not_executed",
+  "research_role": "Stage 1 OpenAI CLIP held-out transfer design before any student training",
+  "encoder_decision": {
+    "primary": "OpenAI CLIP ViT-B/32 quick-GELU",
+    "frozen_checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "feature_dimension": 512,
+    "load_policy": "OpenCLIP ViT-B-32-quickgelu, weights_only=True, strict=True, eval mode",
+    "remoteclip_role": "historical comparator only; not a forward-pipeline dependency"
+  },
+  "feature_space_rule": {
+    "encoder_matched_image_and_text_towers": true,
+    "remoteclip_feature_or_prototype_reuse": false,
+    "reason": "Cross-encoder dot products and prototype reuse are invalid."
+  },
+  "classes": ["building", "road", "water", "barren", "forest", "agriculture"],
+  "folds": [
+    {"fold": "holdout_building", "unseen": ["building"], "seen": ["road", "water", "barren", "forest", "agriculture"]},
+    {"fold": "holdout_road", "unseen": ["road"], "seen": ["building", "water", "barren", "forest", "agriculture"]},
+    {"fold": "holdout_water", "unseen": ["water"], "seen": ["building", "road", "barren", "forest", "agriculture"]},
+    {"fold": "holdout_barren", "unseen": ["barren"], "seen": ["building", "road", "water", "forest", "agriculture"]},
+    {"fold": "holdout_forest", "unseen": ["forest"], "seen": ["building", "road", "water", "barren", "agriculture"]},
+    {"fold": "holdout_agriculture", "unseen": ["agriculture"], "seen": ["building", "road", "water", "barren", "forest"]}
+  ],
+  "phase_1_proxy": {
+    "purpose": "low-cost no-training, OpenAI-CLIP-only held-out text matching diagnostic",
+    "input_scope": "existing LoveDA Train images and frozen candidate masks only; create OpenAI CLIP embeddings from pixels when an immutable input package is registered",
+    "candidate_sampling": "image-ID-based or all candidates; never select by VLM score, margin, prediction, pixel GT, or held-out correctness",
+    "prototype_rule": "any visual prototype is constructed in OpenAI CLIP space from seen classes only",
+    "unseen_rule": "held-out class has no prototype, calibration sample, threshold tuning, or prompt selection",
+    "claim_limit": "proxy weak-label transfer only; not true unseen accuracy or segmentation"
+  },
+  "leakage_controls": {
+    "sam3_rerun_allowed": false,
+    "training_allowed": false,
+    "e2_oracle_allowed": false,
+    "val_allowed_before_final_method_freeze": false,
+    "train_image_tags_origin": "LoveDA Train pixel-mask presence simulation with minimum 16 pixels; inherited disclosure required"
+  },
+  "execution_gate": {
+    "current_state": "blocked_pending_openai_clip_pixel_package",
+    "required_before_phase_1": [
+      "an immutable all-candidate or image-ID-selected package containing the exact RGB crops and masks",
+      "a frozen row-key manifest, source hashes, and candidate-mask fingerprints",
+      "OpenAI CLIP checkpoint, tokenizer, preprocessing and prompt-token manifest",
+      "a pre-result analysis commit and protocol SHA-256",
+      "an OpenAI-CLIP-only feature cache or on-the-fly re-encoding; legacy RemoteCLIP feature files are rejected"
+    ]
+  }
+}

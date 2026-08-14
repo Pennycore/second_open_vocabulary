@@ -1,6 +1,15 @@
-# OV-WSSS Stage 0: RemoteCLIP Visual–Text Alignment Probe
+# OpenAI CLIP OV-WSSS
 
-This project tests one narrow question: whether **existing, Train-only, weakly supervised** RemoteCLIP region features or visual prototypes from the first paper align with RemoteCLIP text embeddings. It does not run SAM3, produce pseudo-labels, train a student, tune RemoteCLIP, or claim open-vocabulary segmentation.
+The forward architecture for this second-paper project is **OpenAI CLIP
+ViT-B/32 quick-GELU**, with encoder-matched image and text towers. It does not
+rerun SAM3, produce pseudo-labels, train a student, or fine-tune the encoder.
+
+The existing Stage 0 RemoteCLIP probe is retained as an immutable historical
+audit. Its feature vectors and prototypes are incompatible with OpenAI CLIP and
+may only be used to reproduce the original RemoteCLIP-space results. New LoveDA
+work must re-encode the existing read-only RGB/mask candidate views in OpenAI
+CLIP space after the v1 pixel-package gate is registered. See
+`configs/architecture_v1.json` and `configs/stage1_ov_protocol_v1.json`.
 
 All external inputs are opened read-only. Every run receives a unique directory such as `outputs/ov_probe_v0/run_20260812_001`; existing runs are never silently replaced. Random operations use seed 42 and every cosine comparison L2-normalizes both sides.
 

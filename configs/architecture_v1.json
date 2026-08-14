@@ -1,0 +1,31 @@
+{
+  "format_version": 1,
+  "status": "active_forward_architecture",
+  "decision_date": "2026-08-14",
+  "primary_encoder": {
+    "family": "OpenAI CLIP",
+    "architecture": "ViT-B-32-quickgelu",
+    "packaging": "OpenCLIP/timm converted state_dict",
+    "feature_dimension": 512,
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "image_text_towers": "encoder-matched; normalize each embedding before similarity",
+    "load_policy": "weights_only=True, strict=True, eval mode; no download or fine-tuning"
+  },
+  "pipeline": [
+    "dataset adapter",
+    "frozen OpenAI CLIP image and text towers",
+    "dataset-independent region-text assignment",
+    "dataset adapter fusion and evaluation",
+    "optional student only after a separately registered no-training gate"
+  ],
+  "legacy_remoteclip": {
+    "role": "historical baseline and reproducibility artifact only",
+    "cross_encoder_feature_reuse_allowed": false,
+    "reason": "RemoteCLIP region features and prototypes occupy a different embedding space from OpenAI CLIP."
+  },
+  "constraints": {
+    "rerun_sam3": false,
+    "large_scale_training": false,
+    "pixel_gt_before_final_evaluation": false
+  }
+}

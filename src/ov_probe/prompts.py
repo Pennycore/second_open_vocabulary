@@ -146,3 +146,60 @@ class RemoteCLIPTextEncoder:
                 tokens = self.tokenizer(texts[start : start + self.batch_size]).to(self.device)
                 outputs.append(self.model.encode_text(tokens).float().cpu().numpy())
         return np.concatenate(outputs, axis=0).astype(np.float32)
+
+
+class OpenAIClipTextEncoder:
+    """Frozen OpenAI CLIP text tower packaged as an OpenCLIP state dictionary.
+
+    This is the forward architecture for the second paper.  It deliberately
+    requires the quick-GELU ViT-B/32 variant: loading this checkpoint into the
+    default GELU variant can succeed structurally while changing the model.
+    """
+
+    architecture = "ViT-B-32-quickgelu"
+    checkpoint_sha256 = "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e"
+
+    def __init__(self, cfg: dict[str, Any]) -> None:
+        try:
+            import open_clip
+            import torch
+        except Exception as exc:
+            raise RuntimeError("open_clip is not installed in this Python environment; no download was attempted.") from exc
+        model_cfg = cfg.get("model", {})
+        configured_architecture = str(model_cfg.get("architecture", self.architecture))
+        if configured_architecture != self.architecture:
+            raise InputValidationError(
+                f"OpenAI CLIP requires {self.architecture}, not {configured_architecture}."
+            )
+        checkpoint_value = cfg.get("paths", {}).get("openai_clip_checkpoint")
+        if not checkpoint_value:
+            raise InputValidationError("OpenAI CLIP requires paths.openai_clip_checkpoint.")
+        checkpoint = Path(str(checkpoint_value))
+        if not checkpoint.is_file():
+            raise FileNotFoundError(f"OpenAI CLIP checkpoint not found: {checkpoint}")
+        if sha256_file(checkpoint).lower() != self.checkpoint_sha256:
+            raise InputValidationError("OpenAI CLIP checkpoint hash differs from the registered artifact.")
+        expected_dim = int(model_cfg.get("feature_dim", 512))
+        if expected_dim != 512:
+            raise InputValidationError("OpenAI CLIP ViT-B/32 quick-GELU has a 512-dimensional embedding space.")
+        requested = str(model_cfg.get("device", "auto"))
+        self.device = "cuda" if requested == "auto" and torch.cuda.is_available() else ("cpu" if requested == "auto" else requested)
+        self.torch = torch
+        self.model = open_clip.create_model(self.architecture, pretrained=None)
+        state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+        state = state.get("state_dict", state)
+        state = {key.removeprefix("module."): value for key, value in state.items()}
+        self.model.load_state_dict(state, strict=True)
+        self.model.eval().to(self.device)
+        self.tokenizer = open_clip.get_tokenizer(self.architecture)
+        self.batch_size = int(model_cfg.get("text_batch_size", 128))
+
+    def encode(self, texts: list[str]) -> np.ndarray:
+        if not texts:
+            return np.empty((0, 512), dtype=np.float32)
+        outputs = []
+        with self.torch.inference_mode():
+            for start in range(0, len(texts), self.batch_size):
+                tokens = self.tokenizer(texts[start : start + self.batch_size]).to(self.device)
+                outputs.append(self.model.encode_text(tokens).float().cpu().numpy())
+        return np.concatenate(outputs, axis=0).astype(np.float32)

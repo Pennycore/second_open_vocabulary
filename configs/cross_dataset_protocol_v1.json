@@ -39,7 +39,7 @@
       "archive checksums and terms recorded",
       "VOC val overlap removed from SBD training through train_noval",
       "20-class mapping and split counts validated",
-      "no-training RemoteCLIP bridge completed on a frozen image-ID-selected sample"
+      "no-training OpenAI CLIP whole-image sanity check completed on a frozen image-ID-selected sample"
     ],
     "coco2014": [
       "VOC no-training experiment passes its pre-registered gate",
@@ -53,7 +53,7 @@
     "download_now": "voc2012_and_sbd_complete",
     "train_now": false,
     "next_dataset": "voc2012_sbd",
-    "next_action": "freeze a small class-agnostic proposal-provider engineering gate without SAM3 or training",
+    "next_action": "register a small OpenAI-CLIP-only, class-agnostic proposal-provider engineering gate without SAM3 or training",
     "download_coco_now": false
   }
 }

@@ -1,0 +1,11 @@
+experiment:
+  name: voc2012_openai_clip_presence_eval_v1
+  overwrite: false
+
+paths:
+  # The tracked configuration deliberately has no server-local score-cache or mask paths.
+  # An ignored deployment config may provide project-contained relative paths.
+  score_cache_manifest: null
+  raw_mask_root: null
+  protocol_file: configs/voc2012_openai_clip_presence_eval_protocol_v1.json
+  output_root: outputs/voc2012_openai_clip_presence_eval_v1

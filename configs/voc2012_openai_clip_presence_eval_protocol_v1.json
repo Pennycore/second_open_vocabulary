@@ -1,0 +1,57 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "role": "PASCAL VOC 2012 Segmentation val image-presence evaluation of one immutable OpenAI-CLIP zero-shot score cache",
+  "scientific_evidence": false,
+  "evaluation_evidence": true,
+  "scope_disclosure": "This is a fixed external image-level presence evaluation of an already-computed score cache. It is not a segmentation mIoU result and does not establish general scientific evidence by itself.",
+  "dataset": {
+    "name": "PASCAL VOC 2012",
+    "split": "Segmentation val",
+    "mask_root_relative": "VOCdevkit/VOC2012/SegmentationClass",
+    "image_count": 1449,
+    "class_id_range": [1, 20],
+    "background_id": 0,
+    "ignore_id": 255
+  },
+  "score_cache": {
+    "manifest_sha256": "67f4e371999e856bfb5b3169d7343576d958c6e3c27a2abf49db3204530301f5",
+    "scores_sha256": "1b88e70f2456d6b89a7f552fc6cd6ecf0b03c38f56cf0cfb12abe65a406ef24d",
+    "image_ids_sha256": "1439193bc81ad369518d66d4f87003877aa0b535e201dac65a42362637e04af7",
+    "scores_shape": [1449, 20],
+    "scores_dtype": "float32",
+    "image_id_count": 1449
+  },
+  "classes": [
+    "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
+    "dining table", "dog", "horse", "motorbike", "person", "potted plant", "sheep", "sofa", "train", "tv monitor"
+  ],
+  "target": {
+    "name": "image-level class presence",
+    "rule": "For each immutable SegmentationClass PNG, class c is present iff any decoded mask pixel has VOC class ID c. Background 0 and void 255 are ignored.",
+    "label_access": "Read only the direct <image_id>.png files under the configured SegmentationClass root. Do not access JPEGImages, Annotations, ImageSets/Main, class-specific files, or any other ground-truth source."
+  },
+  "metric": {
+    "name": "uninterpolated integral average precision",
+    "definition": "Sort fixed continuous scores descending; aggregate equal scores as one threshold; AP is the sum of recall increments times precision at each distinct score. Macro mAP is the arithmetic mean across all 20 classes.",
+    "zero_support": "fail_closed"
+  },
+  "constraints": {
+    "model_execution": false,
+    "network_download": false,
+    "score_mutation": false,
+    "threshold_selection": false,
+    "prediction_export": false,
+    "prompt_selection": false,
+    "prototype_selection": false,
+    "class_selection": false,
+    "segmentation_miou": false,
+    "sam3_rerun": false,
+    "training": false,
+    "overwrite": false
+  },
+  "output": {
+    "metrics_file": "metrics.json",
+    "manifest_file": "manifest.json"
+  }
+}

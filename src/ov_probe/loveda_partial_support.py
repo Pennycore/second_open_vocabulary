@@ -79,6 +79,48 @@ def guard_predictions(text_top1: np.ndarray, c2_scores: np.ndarray, unsupported_
     return guard_pred
 
 
+def ctp_predictions(
+    text_top1: np.ndarray,
+    text_scores: np.ndarray,
+    scc_scores: np.ndarray,
+    supported_mask: np.ndarray,
+) -> np.ndarray:
+    """Confidence-aware Text Preservation (CTP).
+
+    Frozen, training-free, parameter-free rule:
+    - t* = argmax_c T_c(x) (frozen text top-1); m_t(x) = T_{t*}(x) - T_second(x)
+      is the frozen text margin (text confidence, no tunable parameter).
+    - If t* is an unsupported class AND T_{t*}(x) + m_t(x) > max_{c in Supported}
+      S_c^SCC(x), keep the text prediction. The margin acts as a confidence
+      allowance: a clear text winner may be preserved even when the SCC
+      competition slightly out-scores it; a weak text top-1 (small margin)
+      follows the SCC competition.
+    - Otherwise follow the SCC competition (supported: A_c - b(x); unsupported: T_c).
+    - |S| = 0: CTP degenerates to Text-only (same as SCC/Guard).
+    - all supported: Unsupported is empty, so CTP == SCC == C2.
+    No threshold, temperature, beta, or any tunable parameter: the allowance is
+    the frozen text margin itself.
+    """
+    text_top1 = np.asarray(text_top1, dtype=np.int64)
+    if text_scores.shape != scc_scores.shape:
+        raise InputValidationError("CTP score matrices must share the same shape.")
+    if supported_mask.shape != (scc_scores.shape[1],):
+        raise InputValidationError("CTP support mask must match the class count.")
+    pred = np.argmax(scc_scores, axis=1)
+    if not supported_mask.any():
+        return text_top1.copy()
+    supported_idx = np.where(supported_mask)[0]
+    unsupported_idx = np.where(~supported_mask)[0]
+    is_unsup_text = np.isin(text_top1, unsupported_idx)
+    t_star_score = text_scores[np.arange(len(text_top1)), text_top1]
+    sorted_text = np.sort(text_scores, axis=1)
+    text_margin = sorted_text[:, -1] - sorted_text[:, -2]
+    scc_supported_max = scc_scores[:, supported_idx].max(axis=1)
+    preserve = is_unsup_text & ((t_star_score + text_margin) > scc_supported_max)
+    pred[preserve] = text_top1[preserve]
+    return pred
+
+
 def benchmark_all_subsets(
     text_scores: np.ndarray,
     visual_scores: np.ndarray,
@@ -101,9 +143,9 @@ def benchmark_all_subsets(
     c1_base = 0.5 * text_scores + 0.5 * visual_scores
     text_pred_all = np.asarray(text_pred, dtype=np.int64)
 
-    method_names = ["text_only", "C1", "C2", "SCC", "guard"]
+    method_names = ["text_only", "C1", "C2", "SCC", "guard", "CTP"]
     subset_rows: list[list] = []
-    checks = {"scc_k0_equals_text": True, "scc_k6_equals_c2": True}
+    checks = {"scc_k0_equals_text": True, "scc_k6_equals_c2": True, "ctp_k0_equals_text": True, "ctp_k6_equals_scc": True}
 
     for subset_index in range(1 << len(classes)):
         mask = np.asarray([(subset_index >> i) & 1 for i in range(len(classes))], dtype=bool)
@@ -119,6 +161,7 @@ def benchmark_all_subsets(
         c2[:, ~mask] = text_scores[:, ~mask]
         scc = scc_scores(text_scores, anchored, mask)
         guard = guard_predictions(text_pred_all, c2, u_idx)
+        ctp = ctp_predictions(text_pred_all, text_scores, scc, mask)
 
         preds = {
             "text_only": text_pred_all,
@@ -126,15 +169,19 @@ def benchmark_all_subsets(
             "C2": np.argmax(c2, axis=1),
             "SCC": np.argmax(scc, axis=1),
             "guard": guard,
+            "CTP": ctp,
         }
         if k == 0:
-            # With no supported class SCC is defined as pure text scores; use the
+            # With no supported class SCC/CTP are defined as pure text scores; use the
             # frozen float32-era text predictions so the k=0 identity check is exact
             # (recomputing argmax from the float16-stored scores can flip ties).
             preds["SCC"] = text_pred_all
+            preds["CTP"] = text_pred_all
             checks["scc_k0_equals_text"] = checks["scc_k0_equals_text"] and bool(np.array_equal(preds["SCC"], text_pred_all))
+            checks["ctp_k0_equals_text"] = checks["ctp_k0_equals_text"] and bool(np.array_equal(preds["CTP"], text_pred_all))
         if k == 6:
             checks["scc_k6_equals_c2"] = checks["scc_k6_equals_c2"] and bool(np.array_equal(preds["SCC"], preds["C2"]))
+            checks["ctp_k6_equals_scc"] = checks["ctp_k6_equals_scc"] and bool(np.array_equal(preds["CTP"], preds["SCC"]))
 
         row: list[Any] = [subset_index, k, "|".join(supported), "|".join(unsupported)]
         for name in method_names:
@@ -167,6 +214,7 @@ def benchmark_all_subsets(
 __all__ = [
     "CLASSES",
     "benchmark_all_subsets",
+    "ctp_predictions",
     "guard_predictions",
     "scc_scores",
 ]

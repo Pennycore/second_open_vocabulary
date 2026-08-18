@@ -1,0 +1,22 @@
+experiment:
+  name: loveda_blind_gt_v0
+  overwrite: false
+
+paths:
+  pixel_pack: inputs/encoder_compare_pack_v0/run_20260814_001/pixel_pack
+  split_manifest: outputs/openai_clip_holdout_split_v1/run_20260814_002/manifest.json
+  development_records: outputs/openai_clip_holdout_split_v1/run_20260814_002/development_records.jsonl
+  heldout_records: outputs/openai_clip_holdout_split_v1/run_20260814_002/heldout_records.jsonl
+  feature_cache_manifest: outputs/openai_clip_feature_cache_v1/run_20260814_001/manifest.json
+  features: outputs/openai_clip_feature_cache_v1/run_20260814_001/features_openai_clip.npy
+  row_partitions: outputs/openai_clip_feature_cache_v1/run_20260814_001/row_partitions.jsonl
+  # This tracked base config is deliberately non-runnable. Use an ignored deployment
+  # config with the audited checkpoint and LoveDA label directory.
+  openai_clip_checkpoint: null
+  loveda_label_dir: null
+  protocol_file: configs/loveda_blind_gt_protocol_v0.json
+  output_root: outputs/loveda_blind_gt_v0
+
+runtime:
+  device: auto
+  batch_regions: 64

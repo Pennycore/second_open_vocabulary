@@ -1,0 +1,100 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "role": "Confirmatory blind LoveDA Train GT evaluation of frozen OpenAI-CLIP text-only, visual-only, and 0.5/0.5 text+visual region recognition",
+  "scientific_evidence": true,
+  "blind": {
+    "declaration": "The LoveDA Train pixel GT is never opened before every region prediction is computed and persisted; the evaluate phase requires the predict-phase manifest and prediction artifact hashes, then reads GT only to score frozen predictions.",
+    "split_by": "original image_id, sha256(f'42:{image_id}') lexicographic ranking, first 1647 development images, remaining 411 heldout images; no image contributes regions to both prototype support and evaluation",
+    "gt_read_before_predictions": false,
+    "gt_use": "region GT label derived by majority vote over the 6-class colors inside the SAM3 candidate mask of the heldout region; background and ignore pixels never vote"
+  },
+  "dataset": "LoveDA",
+  "split": "train",
+  "classes": ["building", "road", "water", "barren", "forest", "agriculture"],
+  "pixel_pack": {
+    "bundle_id": "abb886a04bd6e42402a16e9c98357978142911f33c0f01ed0573fe3734e69b71",
+    "record_count": 6000,
+    "image_count": 2058,
+    "ordered_record_key_sha256": "a1240067efcbd43611eef296e930243801afa1cb7a7be948bdd7b09d9b3e608a"
+  },
+  "split_inputs": {
+    "manifest_sha256": "0ca05cc6e01f83c537ae22f665b5296a590aaa55a09b839e2321bae07e45d39e",
+    "development_records_sha256": "60e36878456ca0625b870de20adea8ac8d351576e9b976b325ee02a7e63692bc",
+    "heldout_records_sha256": "1b9fd6d0d5f108c4a5639e84431f9ab4573a6d1a9c7d7938906de3ea1cdc9734",
+    "development_image_count": 1647,
+    "heldout_image_count": 411,
+    "image_disjoint": true,
+    "coverage": "every frozen pixel-pack (image_id,candidate_index) key exactly once"
+  },
+  "feature_cache": {
+    "manifest_sha256": "747f415e0d0ed1d24aa870fd6b2bb71a7dbff5a5972e781b485c6cb84ab9ddc9",
+    "features_sha256": "ac75c0beec5cfe2a1934cfc802abba1e0e41835cd956e6a2dd43ae5dd503d823",
+    "row_partitions_sha256": "d0792337ae12314248374d7d73fbf7508b3e6cbd17408013b7ba38ed96ec653a",
+    "feature_shape": [6000, 512],
+    "feature_dtype": "float16"
+  },
+  "model": {
+    "identity": "OpenAI CLIP ViT-B/32 quick-GELU; OpenCLIP/timm converted state_dict",
+    "architecture": "ViT-B-32-quickgelu",
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "feature_dimension": 512,
+    "open_clip_version": "3.3.0",
+    "load_policy": "weights_only=True, strict=True, eval mode"
+  },
+  "software": {
+    "image_preprocess": "OpenCLIP transform selected by ViT-B-32-quickgelu",
+    "tokenizer": "OpenCLIP SimpleTokenizer selected by ViT-B-32-quickgelu"
+  },
+  "prompts": {
+    "group_a_templates": ["{class}", "a photo of {class}", "an aerial image of {class}", "a satellite image of {class}", "a remote sensing image of {class}", "{class} in an aerial image", "{class} in a satellite image", "a region of {class} viewed from above"]
+  },
+  "strategy": {
+    "visual_prototype": "L2 normalize cached float32 development rows for each sam3_source_label, arithmetic mean, then L2 normalize each class prototype",
+    "text_prototype": "L2 normalize each fixed Group A prompt embedding, arithmetic mean by class, then L2 normalize each class prototype",
+    "text_only_score": "cosine(region, text_prototype)",
+    "visual_only_score": "cosine(region, visual_prototype)",
+    "fused_score": "0.5 * cosine(region, text_prototype) + 0.5 * cosine(region, visual_prototype)",
+    "fixed_text_weight": 0.5,
+    "fixed_visual_weight": 0.5,
+    "prediction_rule": "argmax over the full 6-class vocabulary, no threshold",
+    "development_label_use": "sam3_source_label only for one visual prototype per registered class"
+  },
+  "ground_truth": {
+    "label_png": "1024x1024 RGB; per-class colors from loveda_config_manual4.json",
+    "color_map": {
+      "building": [255, 0, 0],
+      "road": [255, 255, 0],
+      "water": [0, 0, 255],
+      "barren": [159, 129, 183],
+      "forest": [0, 255, 0],
+      "agriculture": [255, 255, 255]
+    },
+    "background_color": [0, 0, 0],
+    "ignore_color": [255, 0, 255],
+    "region_label_rule": "majority vote of class-color pixels inside the SAM3 candidate mask cropped to the registered crop_box; background and ignore pixels never vote",
+    "unlabeled_rule": "a heldout region with zero class-color pixels inside its mask is reported as unlabeled and excluded from metrics with its count disclosed"
+  },
+  "evaluation": {
+    "region_level": true,
+    "metrics": ["accuracy", "macro_f1", "per_class_f1", "confusion_matrix"],
+    "comparisons": ["text_only", "visual_only", "fused_text_visual"],
+    "threshold_selection": false,
+    "prompt_selection": false,
+    "prototype_selection_after_test": false
+  },
+  "constraints": {
+    "sam3_rerun": false,
+    "training": false,
+    "adapter_or_new_network": false,
+    "alpha_tuning": false,
+    "prompt_tuning": false,
+    "threshold_tuning": false,
+    "grid_search": false,
+    "model_selection_or_decision": false,
+    "region_reencoding": false,
+    "remoteclip_feature_or_text_reuse": false,
+    "gt_before_predictions": false,
+    "overwrite": false
+  }
+}

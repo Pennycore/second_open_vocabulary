@@ -1,52 +1,73 @@
-# Phase R：Vaihingen untouched 状态审计
+# Phase R（更新）：Vaihingen 数据存在性审计与资源盘点
 
-审计日期：2026-08-18
-审计范围：本地项目（`C:\Users\28457\Desktop\open_vocabulary`）、服务器（172.18.56.240：`/home/undergr/` 全盘）、Git 历史、第一篇项目
+审计日期：2026-08-18（第二次审计，用户提供本地数据后）
+用户提供路径：`C:\Users\28457\Desktop\remote_dataset`
 
-## 1. 审计结果
+## 1. 数据存在性：✅ 已确认存在（两部分）
+
+### 1.1 官方 ISPRS Vaihingen（权威 GT）
+
+`C:\Users\28457\Desktop\remote_dataset\ISPRS_semantic_labeling_Vaihingen\`
+
+| 内容 | 数量 | 说明 |
+|---|---|---|
+| `top/`（RGB 航拍图） | 33 张 area（1–38 中的 33 个） | `top_mosaic_09cm_area*.tif`，原始分辨率约 1919×2569 |
+| `gts_for_participants/`（官方 GT） | **16 张 area**：1,3,5,7,11,13,15,17,21,23,26,28,30,32,34,37 | RGB 编码 6 类（实测 area1：蓝=building、白=impervious、绿=tree、青=lowveg、黄=car、红=clutter 仅 2px） |
+| `dsm/`（数字表面模型） | 16 张（与 GT area 对应） | 未计划使用 |
+| 压缩包 | `ISPRS_semantic_labeling_Vaihingen.zip`（879MB） | 官方分发 |
+
+### 1.2 第三方预处理布局（RemoteCLIP benchmark 风格）
+
+`C:\Users\28457\Desktop\remote_dataset\remote\`
+
+- `remote/Vaihingen/Vaihingen/{images,labels}/`：**1198 个 512×512 图块**（覆盖全部 33 个 area），标签为**单通道 uint8，值 0–4（5 类，无 clutter）**
+- `remote/partitions/Vaihingen/`：`val.txt`（612 行）、`all/labeled.txt`（586 行）、`1-2 / 1-4 / 1-8 / 1-16` 各含 `labeled.txt / unlabeled.txt`（标注比例划分）
+- 同布局还包含 iSAID、LoveDA、MER、MSL、Postdam 及 partitions 下 ade20k/cityscapes/coco/DFC22/GID-15/pascal 等
+
+## 2. 关键发现：remote 预处理版本标签来源存疑，不可作为盲测 GT
+
+- `remote/Vaihingen/Vaihingen/labels/` 覆盖**全部 33 个 area**，其中包括**无官方 GT 的 area**（如 area2 有 367 个 patch、area24/29/33/35/38 等）。
+- `remote/partitions/Vaihingen/val.txt` 的验证集包含非官方 GT area：**2,4,6,24,29,33,35,38**。
+- 官方仅 16 个 area 有 GT。remote 版本中这些额外 area 的"标签"来源**无法在本项目内验证**（可能是第三方基准的伪标签/重标注/其他来源）。
+- 标签仅 5 类（0–4），与官方 6 类（含 clutter）编码不一致，且映射规则未知。
+
+**结论：`remote/` 预处理版本不能作为 blind confirmation 的权威 GT。** 盲测 GT 只能使用官方 `gts_for_participants/`（16 个 area，RGB 6 类编码，可验证）。
+
+## 3. untouched 状态：✅ 三项检查均为否（可标记 untouched_external_confirmation）
 
 | 问题 | 结论 |
 |---|---|
-| Vaihingen 是否已存在于当前项目？ | **否（无现成数据）** |
-| 是否曾用 Vaihingen GT 调整过 prompt/alpha/prototype/SCC/threshold/region selection/segmentation rule？ | **否（无数据即无使用）** |
-| 是否曾看过 SCC/C1/C2 在 Vaihingen 上的指标？ | **否** |
+| Vaihingen 是否曾存在于本项目/被本项目读取？ | 否——git 全历史无引用（仅本审计报告），项目代码/配置/报告无任何 Vaihingen 引用，服务器第一篇/第二篇/experiment 目录无 Vaihingen 产物 |
+| 是否曾用 Vaihingen GT 调整过 prompt/alpha/prototype/SCC/threshold/region selection/segmentation rule？ | 否 |
+| 是否曾看过 SCC/C1/C2 在 Vaihingen 上的指标？ | 否 |
 
-### 详细证据
+**标记：`untouched_external_confirmation`**（以官方 16 area GT 为评估依据的前提下）。
 
-1. **本地项目**：`C:\Users\28457\Desktop\open_vocabulary` 内无任何 `vaih*`/`isprs*` 文件或目录；git 全历史（`git log --all`）无 Vaihingen/ISPRS 相关提交。
-2. **服务器 remote_dataset**：`/home/undergr/remote_dataset/` 仅有 `LoveDA_incoming / LoveDA_main_v1 / LoveDA_raw / Postdam / Postdam_patches_256_paper / Postdam_patches_512 / Postdam_patches_512_full`——**无 Vaihingen 目录**。
-3. **服务器全盘搜索**（`find /home/undergr -iname "*vaihingen*"`）：仅命中第三方参考仓库 `experiment/SegEarth-OV-3-main/configs/` 下的两个**配置文件**（`cfg_vaihingen.py`、`cls_vaihingen.txt`，类别列表 road/building/grass/tree/car/clutter），其 `data_root='data/Vaihingen'` 指向的目录**不存在**（`SegEarth-OV-3-main/data/` 无此目录）。这是开源的 SegEarth-OV 第三方实现（related_work），不是本项目数据，也从未运行。
-4. **第一篇项目**（`Sheungzhen_project_1`）：无 Vaihingen。
-5. **本地桌面其他项目**：`exp_code` 下仅有 mmsegmentation 单元测试的 `pseudo_vaihingen_dataset`（合成伪数据，非真实 Vaihingen）。
+## 4. 资源盘点（协议 Phase S 要求汇报）
 
-## 2. 结论（按用户协议）
+| 资源 | 状态 |
+|---|---|
+| region proposal source | **无**——Vaihingen 从未运行 SAM3/任何 proposal 生成；第一篇工程无 Vaihingen 候选区域缓存；协议禁止重新运行 SAM3 |
+| weak semantic source | **无**——无现成 image-level 弱标签；remote/partitions 的 labeled/unlabeled 是"有/无 GT 的 patch 划分"（semi-supervised 用），不是语义弱标签 |
+| image-level labels | 无现成文件（Postdam 有 `image_level_labels_*.csv`，Vaihingen 无） |
+| existing cached candidates | **无**——无 Vaihingen 的 OpenAI CLIP 特征缓存、无候选区域缓存、无原型 |
+| 权威 GT | 官方 16 个 area（RGB 6 类）✅ |
+| 图像 | 官方 33 张 top 图 ✅（其中 16 张有 GT 可评估） |
 
-- Vaihingen **无现成数据**，且从未参与本论文方法开发（三项检查均为否）。
-- 按协议："如果项目中没有现成 Vaihingen 数据或该数据此前已经用于本论文方法开发，则**不要自行替换数据集，先汇报实际情况并停止**。"
-- 因此：**停止执行 Phase S/T 外部盲测**，不自行替换为 Potsdam 或其他数据集。
+## 5. 协议约束下的障碍（必须由用户决策）
 
-## 3. 供决策的现状盘点（不自行选择）
+按协议 Phase S："如果 Vaihingen 没有现成弱监督区域来源：**不要使用 GT 构造 visual prototype。也不要自行重新设计复杂 weak supervision。先汇报当前能获得的……再决定如何建立公平 protocol。**"
 
-若用户决定更换外部确认数据集，当前可获得的候选资源（未参与 SCC 开发）：
+当前障碍：
+1. **无弱监督区域来源**：Vaihingen 无 SAM3 缓存；禁止重跑 SAM3；禁止用 GT 构造 prototype；禁止自行设计 weak supervision。
+2. 评估可用图像仅 16 张（官方 GT 覆盖），且类别词汇表（impervious/building/lowveg/tree/car/clutter）与 LoveDA 6 类（building/road/water/barren/forest/agriculture）**不同**——SCC-v1 冻结的 8 个 Group-A prompts 针对 LoveDA 类名设计，外部确认的 class vocabulary 需要用户明确批准（例如：使用 Vaihingen 自身 5/6 类 + 相同 prompt 模板结构，或指定类名映射）。
 
-| 候选 | 服务器路径 | 备注 |
-|---|---|---|
-| Potsdam（ISPRS 2D） | `/home/undergr/remote_dataset/Postdam`（9.0G）、`Postdam_patches_512_full`（7.2G）、`Postdam_patches_256_paper`（3.8G）、`Postdam_patches_512`（200M） | 有 GT label（`5_Labels_all/*_label.tif`）；是否触碰过需另行审计其"已参与第一篇方法开发"的历史 |
-| LoveDA（外部子集） | 已全部用于本论文开发 | 不满足 untouched |
-| VOC 2012 | 已用于 sanity check | 非遥感 |
+## 6. 等待用户决策（不自行选择）
 
-**注意**：Potsdam 在第一篇论文工程中有对应工作（`Postdam_patches_256_paper` 命名暗示），若选用 Potsdam 必须另行审计其是否"已参与本论文方法开发"（第一篇 vs 第二篇的独立性）；该判断留给用户，本阶段不执行。
+可选路径（供用户选择，不自行执行）：
 
-## 4. 已完成的冻结前置工作（不受 Vaihingen 缺失影响）
+- **A**：用户批准使用官方 16 个 area GT + Vaihingen 自身类别词汇表（impervious_surface/building/low_vegetation/tree/car，prompt 模板结构不变、类名替换为 Vaihingen 类别），并明确 weak visual support 来源（若批准，则需说明 prototype 的弱监督区域从何而来——例如允许使用与 LoveDA 相同的 SAM3 弱监督管线但**不重跑 SAM3** 则不可行，需要用户提供或批准替代 proposal 来源）。
+- **B**：用户提供 Vaihingen 的现成 region proposals / 特征缓存 / 弱标签（如服务器上其他工具生成的缓存）。
+- **C**：用户改选其他数据集（需重新审计 untouched）。
 
-- Phase P：LoveDA 冻结前最终指标审计（OA/Macro F1/mIoU + S/U/H-F1 + S/U/H-IoU，k=0..6 汇总，mean(H_i) 聚合已注明）✅
-- Phase Q：`configs/scc_v1_frozen.json` + `reports/scc_v1_freeze_record_20260818.md` ✅
-- SCC-v1 冻结 commit：`f5d7d91`（待本阶段提交后更新）
-
-## 5. 下一步（等待用户决定）
-
-1. 由用户提供 Vaihingen 数据（官方 ISPRS Vaihingen 2D 需授权下载）；或
-2. 用户明确批准改用 Potsdam（需先完成 Potsdam untouched 审计）；或
-3. 用户决定其他数据集。
-
-在获得明确指示前，不执行任何外部 blind 实验。
+在获得明确指示前，不执行任何 Vaihingen 实验。

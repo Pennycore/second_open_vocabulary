@@ -1,0 +1,96 @@
+{
+  "format_version": 1,
+  "status": "frozen_pre_result",
+  "role": "External blind confirmation of SCC-v1 on ISPRS Vaihingen (untouched_external_confirmation)",
+  "scientific_evidence": true,
+  "dataset": "ISPRS Vaihingen 2D Semantic Labeling",
+  "source": "official ISPRS distribution (top orthophotos + gts_for_participants)",
+  "blind": {
+    "declaration": "Vaihingen GT is never opened before every region prediction is computed and persisted; the evaluate phase requires the predict-phase manifest and prediction artifact hashes, then reads GT only to score frozen predictions. SAM3 weak-supervision runs with all-positive image-level labels (no GT-derived weak labels).",
+    "gt_read_before_predictions": false,
+    "weak_label_rule": "SAM3 prompt-driven candidates with all-positive image-level assumption; no GT pixel, no GT-derived image tags used in predict phase",
+    "untouched_audit": "reports/vaihingen_untouched_audit_20260818.md: no prior use in this paper's method development; no SCC/C1/C2 metrics ever computed on Vaihingen before this run"
+  },
+  "split": {
+    "official_gt_areas": [1, 3, 5, 7, 11, 13, 15, 17, 21, 23, 26, 28, 30, 32, 34, 37],
+    "train_areas": [1, 3, 5, 7, 13, 17, 21, 23, 26, 32, 37],
+    "test_areas": [11, 15, 28, 30, 34],
+    "train_role": "weak visual prototype support only (SAM3 weak labels)",
+    "test_role": "blind region-level evaluation with official GT",
+    "image_disjoint": true
+  },
+  "classes": ["impervious_surface", "building", "low_vegetation", "tree", "car"],
+  "gt_encoding": {
+    "color_map": {
+      "impervious_surface": [255, 255, 255],
+      "building": [0, 0, 255],
+      "low_vegetation": [0, 255, 255],
+      "tree": [0, 255, 0],
+      "car": [255, 255, 0]
+    },
+    "clutter_color": [255, 0, 0],
+    "clutter_rule": "clutter pixels (red) are treated as ignore; they never vote and labeled regions whose mask contains only clutter are unlabeled",
+    "region_label_rule": "majority vote of class-color pixels inside the SAM3 candidate mask; ignore pixels never vote"
+  },
+  "model": {
+    "identity": "OpenAI CLIP ViT-B/32 quick-GELU; OpenCLIP/timm converted state_dict",
+    "architecture": "ViT-B-32-quickgelu",
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "feature_dimension": 512,
+    "open_clip_version": "3.3.0",
+    "load_policy": "weights_only=True, strict=True, eval mode"
+  },
+  "sam3": {
+    "repo": "/home/undergr/Sheungzhen_project_1/sam3-main/sam3-main",
+    "checkpoint": "/home/undergr/Sheungzhen_project_1/checkpoints/sam3.pt",
+    "tile_size": 512,
+    "tile_overlap": 128,
+    "score_threshold": 0.55,
+    "mask_threshold": 0.5,
+    "min_mask_area": 32,
+    "max_mask_area_ratio": 0.95,
+    "prompting": "remoteclip_b2c, include_manual_prompts, max 4 prompts per class",
+    "role": "frozen proposal generator; candidates are the region proposals and their SAM3 class ids are the weak source labels"
+  },
+  "prompts": {
+    "group_a_templates": ["{class}", "a photo of {class}", "an aerial image of {class}", "a satellite image of {class}", "a remote sensing image of {class}", "{class} in an aerial image", "{class} in a satellite image", "a region of {class} viewed from above"]
+  },
+  "strategy": {
+    "visual_prototype": "L2 normalize cached float32 train-area rows for each SAM3 source label, arithmetic mean, then L2 normalize each class prototype",
+    "text_prototype": "L2 normalize each fixed Group A prompt embedding (class names replaced by Vaihingen vocabulary), arithmetic mean by class, then L2 normalize each class prototype",
+    "text_only_score": "cosine(region, text_prototype)",
+    "visual_only_score": "cosine(region, visual_prototype)",
+    "c2_score": "cosine(region, Normalize(0.5*t_c + 0.5*v_c))",
+    "scc_formula": "b(x) = mean_{c in Supported}[A_c(x) - T_c(x)]; supported S_c(x) = A_c(x) - b(x); unsupported S_c(x) = T_c(x); |S|=0 -> Text-only; all supported -> C2",
+    "fixed_text_weight": 0.5,
+    "fixed_visual_weight": 0.5,
+    "prediction_rule": "argmax over the full 5-class vocabulary, no threshold",
+    "development_label_use": "SAM3 source label only for one visual prototype per registered class"
+  },
+  "partial_support": {
+    "vocabulary_size": 5,
+    "enumeration": "all 2^5 = 32 support subsets (5 classes; non-trivial k=1..4)",
+    "pre_registered": true,
+    "subset_generation": "deterministic bitmask enumeration, no GT-based selection"
+  },
+  "evaluation": {
+    "region_level": true,
+    "metrics": ["oa", "macro_f1", "mIoU", "per_class_precision", "per_class_recall", "per_class_f1", "per_class_iou", "confusion_matrix", "S_F1", "U_F1", "H_F1", "S_IoU", "U_IoU", "H_IoU"],
+    "H_aggregation": "mean over subsets of per-subset H (mean(H_i)); not H(mean(S), mean(U))",
+    "ignore_rule": "regions with zero class-color pixels inside their mask are unlabeled and excluded; same valid set for all methods",
+    "bootstrap": {"seed": 42, "repeats": 5000, "cluster": "image_id (area)", "deltas": ["OA", "Macro F1", "mIoU", "H-F1", "H-IoU"], "compare": ["SCC vs Text-only", "SCC vs C2"]}
+  },
+  "constraints": {
+    "training": false,
+    "adapter_or_new_network": false,
+    "alpha_tuning": false,
+    "prompt_tuning": false,
+    "threshold_tuning": false,
+    "grid_search": false,
+    "model_selection_or_decision": false,
+    "gt_before_predictions": false,
+    "gt_derived_weak_labels": false,
+    "remoteclip_feature_or_text_reuse": false,
+    "overwrite": false
+  }
+}

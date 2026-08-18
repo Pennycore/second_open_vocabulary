@@ -1,0 +1,11 @@
+experiment:
+  name: vaihingen_blind_scc_v1
+  overwrite: false
+
+paths:
+  image_dir: /home/undergr/remote_dataset/Vaihingen_main_v1/images
+  label_dir: /home/undergr/remote_dataset/Vaihingen_main_v1/labels
+  candidates_dir: /home/undergr/Sheungzhen_project_1/sam3_remote_wsss/runs/vaihingen_sam3_v0/candidates
+  openai_clip_checkpoint: /home/undergr/Sheungzhen_project_2/second_open_vocabulary/workspaces/openai_clip_715cb5c/inputs/checkpoints/open_clip_pytorch_model.bin
+  protocol_file: configs/vaihingen_scc_protocol_v0.json
+  output_root: outputs/vaihingen_blind_scc_v1

@@ -1,0 +1,72 @@
+{
+  "format_version": 1,
+  "name": "CTP-v1",
+  "status": "frozen",
+  "frozen_commit": "f54c03461c960028ee1d605e852e5c649d54fe43",
+  "frozen_commit_label": "CTP selected as final method candidate after LoveDA + Vaihingen evaluation; CTP-v1 may not be modified after this record",
+  "decision": {
+    "selected": "CTP",
+    "rationale": "CTP is the final method candidate: soft, adaptive, parameter-free, balances supported gain and unsupported preservation. C2 = failure baseline, SCC = global calibration ablation, Guard = hard preservation oracle-like baseline.",
+    "love_da_status": "development-after-P0 (method-development evidence)",
+    "vaihingen_status": "untouched_external_confirmation (predict hashes frozen before GT read; CTP computed from frozen scores)"
+  },
+  "model": {
+    "identity": "OpenAI CLIP ViT-B/32 quick-GELU; OpenCLIP/timm converted state_dict",
+    "architecture": "ViT-B-32-quickgelu",
+    "open_clip_version": "3.3.0",
+    "feature_dimension": 512,
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "load_policy": "weights_only=True, strict=True, eval mode",
+    "quick_gelu": true
+  },
+  "prompts": {
+    "group_a_templates": ["{class}", "a photo of {class}", "an aerial image of {class}", "a satellite image of {class}", "a remote sensing image of {class}", "{class} in an aerial image", "{class} in a satellite image", "a region of {class} viewed from above"],
+    "count": 8
+  },
+  "alpha": 0.5,
+  "visual_prototype_construction": {
+    "source": "weakly supervised regions (SAM3 source weak label; Vaihingen: all-positive image-level assumption, no GT-derived weak labels)",
+    "steps": ["L2 normalize each region feature", "arithmetic mean per class", "L2 normalize the class prototype"]
+  },
+  "scc_formula": {
+    "text_score": "T_c(x) = cosine(x, t_c)",
+    "anchored_score": "A_c(x) = cosine(x, p_c), p_c = Normalize(0.5*t_c + 0.5*v_c)",
+    "support_shift": "b(x) = mean_{c in S}[ A_c(x) - T_c(x) ] (arithmetic mean)",
+    "supported_final": "S_c(x) = A_c(x) - b(x)",
+    "unsupported_final": "S_c(x) = T_c(x)"
+  },
+  "ctp_decision_rule": {
+    "text_top1": "t* = argmax_c T_c(x) (frozen text top-1)",
+    "text_confidence": "m_t(x) = T_{t*}(x) - T_second(x) (frozen text margin, no tunable parameter)",
+    "preserve_condition": "if t* is unsupported AND T_{t*}(x) + m_t(x) > max_{c in Supported} S_c^SCC(x): predict t*",
+    "else_follow": "otherwise predict argmax_c S_c^SCC(x)",
+    "k0_rule": "|S| = 0 -> CTP strictly degenerates to Text-only",
+    "k6_rule": "all supported -> CTP == SCC == C2 (same b(x) subtracted everywhere)",
+    "no_threshold": true,
+    "no_temperature": true,
+    "no_beta": true,
+    "no_training": true,
+    "no_learned_gate": true
+  },
+  "support_definition": {
+    "supported": "class with an existing weakly-supervised visual prototype",
+    "unsupported": "class without a visual prototype; text prototype only"
+  },
+  "random_seed": 42,
+  "boundary_properties": {
+    "k0_equals_text_only": true,
+    "k6_equals_scc_and_c2": true,
+    "test_evidence": "tests/test_loveda_partial_support.py (11 passed) + partial_support_checks.json on real data"
+  },
+  "forbidden_modifications": [
+    "threshold introduction",
+    "temperature introduction",
+    "beta introduction",
+    "learned gate",
+    "alpha change",
+    "prompt change",
+    "prototype construction change",
+    "centering formula change",
+    "any modification based on any future GT"
+  ]
+}

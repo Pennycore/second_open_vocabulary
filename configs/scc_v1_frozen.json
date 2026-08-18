@@ -1,0 +1,77 @@
+{
+  "format_version": 1,
+  "name": "SCC-v1",
+  "status": "frozen",
+  "frozen_commit": "f5d7d917ab9c1fadeb755f1bf14edd435d7e1fa1",
+  "frozen_commit_label": "before Vaihingen external confirmation; SCC-v1 may not be modified after this record",
+  "model": {
+    "identity": "OpenAI CLIP ViT-B/32 quick-GELU; OpenCLIP/timm converted state_dict",
+    "architecture": "ViT-B-32-quickgelu",
+    "open_clip_version": "3.3.0",
+    "feature_dimension": 512,
+    "checkpoint_sha256": "9ecdaef325b20e7283dc6a32f92aa638d100899e4f084c2462d3832eeea0b26e",
+    "load_policy": "weights_only=True, strict=True, eval mode",
+    "quick_gelu": true
+  },
+  "prompts": {
+    "group_a_templates": ["{class}", "a photo of {class}", "an aerial image of {class}", "a satellite image of {class}", "a remote sensing image of {class}", "{class} in an aerial image", "{class} in a satellite image", "a region of {class} viewed from above"],
+    "count": 8
+  },
+  "alpha": 0.5,
+  "visual_prototype_construction": {
+    "source": "weakly supervised regions (SAM3 source weak label)",
+    "steps": ["L2 normalize each region feature", "arithmetic mean per class", "L2 normalize the class prototype"],
+    "region_features": "frozen OpenAI CLIP region features (6000x512 float16 cache, sha256 ac75c0be...)"
+  },
+  "scc_formula": {
+    "text_score": "T_c(x) = cosine(x, t_c)",
+    "anchored_score": "A_c(x) = cosine(x, p_c), p_c = Normalize(0.5*t_c + 0.5*v_c)",
+    "support_shift": "b(x) = mean_{c in S}[ A_c(x) - T_c(x) ] (arithmetic mean over supported classes)",
+    "supported_final": "S_c(x) = A_c(x) - b(x)",
+    "unsupported_final": "S_c(x) = T_c(x)",
+    "k0_rule": "if |S| = 0, SCC strictly degenerates to Text-only",
+    "k6_rule": "if all classes supported, all classes subtract the same b(x), so argmax strictly equals C2"
+  },
+  "support_definition": {
+    "supported": "class with an existing weakly-supervised visual prototype",
+    "unsupported": "class without a visual prototype; text prototype only",
+    "vocabulary": ["building", "road", "water", "barren", "forest", "agriculture"]
+  },
+  "normalization": {
+    "rule": "all prototypes L2 normalized before use; no temperature, no threshold, no beta, no k-dependent rule, no hard gating",
+    "centering": "arithmetic mean only (mean -> median is forbidden)"
+  },
+  "random_seed": 42,
+  "love_da_status": {
+    "label": "development-after-P0",
+    "meaning": "LoveDA heldout was used to discover P1 and to develop SCC; SCC results on LoveDA are method-development evidence, NOT blind confirmation"
+  },
+  "love_da_protocol_sha256": "f46c433ec2126847b75bff9a15e5bbca8bd53d5edcadb0d3422691fd7bd95d52",
+  "final_love_da_metrics": {
+    "fully_supported_k6": {
+      "SCC_OA": 0.670290,
+      "SCC_macro_f1": 0.640386,
+      "SCC_mIoU": 0.478415
+    },
+    "partial_support_k1to5_SCC_H_F1": {
+      "k1": 0.4205,
+      "k2": 0.4730,
+      "k3": 0.4930,
+      "k4": 0.5013,
+      "k5": 0.5012
+    },
+    "note": "H aggregated as mean over subsets of per-subset H (mean(H_i)); not H(mean(S), mean(U))."
+  },
+  "forbidden_modifications": [
+    "mean -> median",
+    "add beta",
+    "confidence threshold",
+    "temperature",
+    "k-dependent rule",
+    "hard gating",
+    "alpha change",
+    "prompt change",
+    "prototype construction change",
+    "any modification based on any future GT"
+  ]
+}

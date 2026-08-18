@@ -68,6 +68,7 @@ def main() -> int:
     with np.load(run_dir / "predictions.npz", allow_pickle=False) as archive:
         text_scores = archive["text_scores"].astype(np.float32)
         visual_scores = archive["visual_scores"].astype(np.float32)
+        text_pred_frozen = archive["text_only"].astype(np.int64)
         hold_indices = archive["heldout_row_indices"].astype(np.int64)
     records = [json.loads(line) for line in (run_dir / "heldout_keys.jsonl").open(encoding="utf-8")]
     gt_labels = _load_gt(cfg, records)
@@ -76,7 +77,10 @@ def main() -> int:
     labeled = [gt is not None for gt in gt_labels]
     gt_index = np.asarray([label_index[gt] for gt in gt_labels if gt is not None], dtype=np.int64)
     hold_labeled = hold_indices[np.asarray(labeled, dtype=bool)]
-    pos = {int(row): i for i, row in enumerate(hold_indices.tolist())}
+    # Prediction arrays (text_scores/visual_scores/loo/text_pred) are indexed by the
+    # frozen cache row_index (6000 rows). hold_indices carries the row_index of each
+    # heldout record, so row indices index the arrays directly; no position remap.
+    pos = {int(row): int(row) for row in hold_indices.tolist()}
 
     per_region: list[list] = []
     summary_rows: list[list] = []
@@ -86,7 +90,7 @@ def main() -> int:
         loo = 0.5 * text_scores + 0.5 * visual_scores
         loo[:, u_idx] = text_scores[:, u_idx]
         loo_pred = np.argmax(loo, axis=1)
-        text_pred = np.argmax(text_scores, axis=1)
+        text_pred = text_pred_frozen  # frozen float32-era predictions, exactly as P0
         supported = [name for name in _CLASSES if name != unsupported]
 
         rows = []

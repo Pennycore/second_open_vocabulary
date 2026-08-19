@@ -1,0 +1,12 @@
+experiment:
+  name: potsdam_ctp_v1_v0
+  overwrite: false
+
+paths:
+  candidates_dir: /home/undergr/Sheungzhen_project_1/sam3_remote_wsss/runs/potsdam_sam3_test_v1/candidates
+  image_dir: /home/undergr/remote_dataset/Potsdam_test_v1/images
+  label_dir: /home/undergr/remote_dataset/Potsdam_test_v1/labels
+  openai_clip_checkpoint: /home/undergr/Sheungzhen_project_2/second_open_vocabulary/workspaces/openai_clip_715cb5c/inputs/checkpoints/open_clip_pytorch_model.bin
+  protocol_file: configs/potsdam_ctp_v1_protocol.json
+  records_jsonl: outputs/potsdam_ctp_v1_v0/records.jsonl
+  output_root: outputs/potsdam_ctp_v1_v0

@@ -100,7 +100,9 @@ def main() -> int:
     text_pred_all = d["text_pred"].astype(np.int64)
 
     records = [json.loads(line) for line in Path(cfg["paths"]["records_jsonl"]).open(encoding="utf-8")]
-    pos_by_row = {r["row_index"]: i for i, r in enumerate(records)}
+    # Potsdam records: {image_id, image_shape, candidate_count} (no row_index); regions are
+    # ordered by candidate index per image. Build pos map per image from candidate order.
+    pos_by_row = None
     from collections import OrderedDict
     by_image: "OrderedDict[str, list[dict]]" = OrderedDict()
     for r in records:
@@ -109,21 +111,17 @@ def main() -> int:
     if args.phase == "predict":
         if label_dir is not None:
             raise InputValidationError("Predict phase must not configure a GT label directory.")
-        # load regions per image once
+        # load regions per image once; scores index = candidate order within image
         image_regions = {}
         for image_id in by_image:
             shape, regions = load_candidate_masks(candidates_dir, image_id)
-            region_by_index = {int(r["candidate_index"]): r for r in by_image[image_id]}
             ordered = []
             for index in range(len(regions)):
-                record = region_by_index[index]
-                pos = pos_by_row[record["row_index"]]
                 ordered.append({
                     "mask": regions[index]["mask"],
                     "x0": regions[index]["x0"],
                     "y0": regions[index]["y0"],
-                    "row_index": record["row_index"],
-                    "pos": pos,
+                    "candidate_index": index,
                 })
             image_regions[image_id] = (shape, ordered)
 
@@ -131,12 +129,16 @@ def main() -> int:
             mask = np.asarray([c in info["supported"] for c in CLASSES], dtype=bool)
             score_mats = method_score_matrices(text_scores_all, visual_scores_all, anchored_all, mask, text_pred_all)
             preds = method_predictions(score_mats, text_pred_all, mask)
+            # scores are indexed by the global record order (concatenated per-image candidate order);
+            # records.jsonl lists images in the same order as predictions.npz was built.
+            record_order = {r["image_id"]: i for i, r in enumerate(records)}
             for image_id, (shape, ordered) in image_regions.items():
+                base = sum(records[j]["candidate_count"] for j in range(record_order[image_id]))
                 for method in METHODS:
                     pred_array = preds[method]
                     scores_matrix = score_mats[method]
-                    pred_sel = np.asarray([pred_array[o["pos"]] for o in ordered], dtype=np.int64)
-                    score_sel = np.asarray([float(scores_matrix[o["pos"], pred_array[o["pos"]]]) for o in ordered], dtype=np.float32)
+                    pred_sel = np.asarray([pred_array[base + o["candidate_index"]] for o in ordered], dtype=np.int64)
+                    score_sel = np.asarray([float(scores_matrix[base + o["candidate_index"], pred_array[base + o["candidate_index"]]]) for o in ordered], dtype=np.float32)
                     label_map, _ = assemble_semantic_map(shape, ordered, pred_sel, score_sel, CLASSES)
                     path = run_root / f"{key}_{method}_{image_id}_semantic.npz"
                     with path.open("xb") as handle:

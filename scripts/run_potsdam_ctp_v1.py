@@ -66,10 +66,14 @@ def main() -> int:
         for npz_path in sorted(candidates_dir.glob("*.npz")):
             image_id = npz_path.name[:-4]
             shape, regions = load_candidate_masks(candidates_dir, image_id)
+            if not regions:
+                # no proposals: nothing to predict for this patch; skip (protocol: uncovered=ignore)
+                continue
             records.append({"image_id": image_id, "image_shape": list(shape), "candidate_count": len(regions)})
         with (run_root / "records.jsonl").open("x", encoding="utf-8", newline="\n") as handle:
             for row in records:
                 handle.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+        print("patches with proposals:", len(records))
 
         # Encode all regions with frozen OpenAI CLIP (same checkpoint/protocol as Vaihingen)
         from ov_probe.vaihingen_blind import _encode_regions
@@ -229,7 +233,10 @@ def main() -> int:
     import tifffile
     from collections import OrderedDict
     records = [json.loads(line) for line in (run_root / "records.jsonl").open(encoding="utf-8")]
-    test_images = sorted({r["image_id"] for r in records})
+    # Evaluate only images with actual candidate proposals (semantic maps exist).
+    test_images = sorted({str(r["image_id"]) for r in records
+                          if (run_root / f"text_only_{r['image_id']}_semantic.npz").is_file()})
+    print("evaluating images with proposals:", len(test_images))
     gt_maps = {}
     GT_COLOR_MAP = {
         "impervious_surface": (255, 255, 255),

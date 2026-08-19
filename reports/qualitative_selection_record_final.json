@@ -1,0 +1,95 @@
+{
+  "format_version": 1,
+  "groups": {
+    "failure": {
+      "label": "Failure Cases (CTP fails while hard preservation recovers)",
+      "selected": [
+        {
+          "ctp_fail_guard_ok_pixels": 252734,
+          "group": "failure",
+          "image_id": "top_potsdam_2_14_x3456_y4224"
+        },
+        {
+          "ctp_fail_guard_ok_pixels": 243496,
+          "group": "failure",
+          "image_id": "top_potsdam_2_14_x3840_y3072"
+        },
+        {
+          "ctp_fail_guard_ok_pixels": 236165,
+          "group": "failure",
+          "image_id": "top_potsdam_4_15_x4992_y1536"
+        }
+      ],
+      "selection_rule": "rank test patches by |{pixel: CTP != GT AND guard == GT AND GT != ignore}| (CTP fails while hard text-preservation recovers the pixel); take top n",
+      "subset_key": "r50_seed42",
+      "unsupported": [
+        "building",
+        "low_vegetation",
+        "car"
+      ]
+    },
+    "representative": {
+      "label": "Representative Cases (seed-42 random, informative filter)",
+      "pool_size": 3453,
+      "selected": [
+        {
+          "group": "representative",
+          "image_id": "top_potsdam_4_15_x0384_y4992"
+        },
+        {
+          "group": "representative",
+          "image_id": "top_potsdam_2_14_x1152_y4608"
+        },
+        {
+          "group": "representative",
+          "image_id": "top_potsdam_5_15_x0768_y1152"
+        },
+        {
+          "group": "representative",
+          "image_id": "top_potsdam_6_13_x4608_y3072"
+        }
+      ],
+      "selection_rule": "rng(seed=42) draw without replacement from test patches whose GT contains >= 1% unsupported-class pixels (informative filter); take min(n=4, pool size)",
+      "subset_key": "r50_seed42",
+      "unsupported": [
+        "building",
+        "low_vegetation",
+        "car"
+      ]
+    },
+    "targeted_recovery": {
+      "label": "Targeted Recovery Cases (existing top-5, directory outputs/potsdam_qualitative_v0 unchanged)",
+      "selected": [
+        {
+          "image_id": "top_potsdam_6_13_x4608_y4992",
+          "recovery_pixels": 29017
+        },
+        {
+          "image_id": "top_potsdam_6_13_x4992_y3456",
+          "recovery_pixels": 23765
+        },
+        {
+          "image_id": "top_potsdam_3_13_x0768_y2304",
+          "recovery_pixels": 16536
+        },
+        {
+          "image_id": "top_potsdam_4_13_x4992_y0768",
+          "recovery_pixels": 13376
+        },
+        {
+          "image_id": "top_potsdam_5_14_x4608_y4224",
+          "recovery_pixels": 12019
+        }
+      ],
+      "selection_rule": "rank by pixel count where C2 wrong AND CTP == GT for GT classes in {car, low_vegetation, tree}; take top-k; fixed before viewing",
+      "subset": "full-support (potsdam_ctp_v1_v0)",
+      "unsupported_pool": [
+        "car",
+        "low_vegetation",
+        "tree"
+      ]
+    }
+  },
+  "note": "Selection rules were fixed BEFORE viewing panels; no cherry-picking by results except the pre-registered ranking rules.",
+  "phase": "qualitative_selection_final"
+}

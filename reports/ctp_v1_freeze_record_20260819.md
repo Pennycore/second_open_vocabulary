@@ -2,7 +2,7 @@
 
 冻结日期：2026-08-19
 冻结 commit：`f54c03461c960028ee1d605e852e5c649d54fe43`
-冻结配置文件：`configs/ctp_v1_frozen.json`
+冻结配置文件：`configs/ctp_v1_frozen.json`（SHA-256 `788f1962d497022fbd5cacd7b63eaedddecd0343104aa726ee80afcdf1b37430`，由 `tests/test_final_audit.py::test_frozen_ctp_hash_unchanged` 校验）
 
 ## 1. 冻结决策
 

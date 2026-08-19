@@ -83,7 +83,7 @@ def main() -> int:
             heldout_by_image.setdefault(str(record["image_id"]), []).append(record)
 
         mask_full = np.ones(len(_CLASSES), dtype=bool)
-        score_mats = method_score_matrices(text_scores_all, anchored_all, mask_full, text_pred_all)
+        score_mats = method_score_matrices(text_scores_all, visual_scores_all, anchored_all, mask_full, text_pred_all)
         preds = method_predictions(score_mats, text_pred_all, mask_full)
 
         maps: dict[str, dict[str, dict]] = {}

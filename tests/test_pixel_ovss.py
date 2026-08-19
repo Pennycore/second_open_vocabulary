@@ -70,8 +70,9 @@ def test_assemble_semantic_map():
 
 def test_method_predictions_consistent():
     text_scores, anchored, text_pred = _synthetic_inputs()
+    visual_scores = np.abs(np.random.default_rng(1).standard_normal(text_scores.shape)).astype(np.float32)
     mask = np.ones(5, dtype=bool)
-    score_mats = method_score_matrices(text_scores, anchored, mask, text_pred)
+    score_mats = method_score_matrices(text_scores, visual_scores, anchored, mask, text_pred)
     preds = method_predictions(score_mats, text_pred, mask)
     # CTP == SCC == C2 == text argmax when all supported
     assert np.array_equal(preds["CTP"], preds["SCC"])

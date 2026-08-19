@@ -72,7 +72,7 @@ def main() -> int:
         # compute per-method predictions for ALL regions once (row_index order)
         # k=5 full support (all 5 classes supported) per protocol main experiment
         mask_full = np.ones(len(CLASSES), dtype=bool)
-        score_mats = method_score_matrices(text_scores_all, anchored_all, mask_full, text_pred_all)
+        score_mats = method_score_matrices(text_scores_all, None, anchored_all, mask_full, text_pred_all)
         preds = method_predictions(score_mats, text_pred_all, mask_full)
 
         maps: dict[str, dict[str, Any]] = {}

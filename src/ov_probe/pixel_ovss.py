@@ -66,14 +66,29 @@ class FusionCanvas:
 
 def method_score_matrices(
     text_scores: np.ndarray,
+    visual_scores: np.ndarray,
     anchored: np.ndarray,
     mask: np.ndarray,
     text_pred: np.ndarray,
+    c2_style: str = "normalized",
 ) -> dict[str, np.ndarray]:
-    """Frozen per-method final score matrices (same shape as text_scores)."""
+    """Frozen per-method final score matrices (same shape as text_scores).
+
+    c2_style:
+      - "normalized" (default): S_c = cos(x, Norm(0.5 t_c + 0.5 v_c)) = anchored,
+        i.e. the frozen C2 used in the main pixel experiment.
+      - "raw": S_c = 0.5*T_c + 0.5*V_c (unnormalized late fusion) -- used only by
+        the score-scale ablation to test whether C2's pixel advantage is a score
+        magnitude artifact.
+    """
     scc = scc_scores(text_scores, anchored, mask)
     ctp = ctp_predictions(text_pred, text_scores, scc, mask)
-    c2 = anchored.copy()
+    if c2_style == "raw":
+        c2 = 0.5 * text_scores + 0.5 * visual_scores
+    elif c2_style == "normalized":
+        c2 = anchored.copy()
+    else:
+        raise InputValidationError(f"Unknown c2_style: {c2_style}")
     c2[:, ~mask] = text_scores[:, ~mask]
     # For CTP, kept text predictions carry their text score (SCC unsupported = T);
     # the argmax class of the CTP prediction is what matters for the label map.
@@ -93,6 +108,23 @@ def method_predictions(scores: dict[str, np.ndarray], text_pred: np.ndarray, mas
         "C2": np.argmax(scores["C2"], axis=1).astype(np.int64),
         "SCC": np.argmax(scc, axis=1).astype(np.int64),
         "CTP": ctp.astype(np.int64),
+    }
+
+
+def semantic_map_stats(label_map: np.ndarray, conflict_source: np.ndarray | None = None) -> dict[str, int]:
+    """Pixel statistics: labeled, uncovered(ignore), conflict-ignored, assigned."""
+    labeled = int((label_map != IGNORE_INDEX).sum())
+    uncovered = int((label_map == IGNORE_INDEX).sum())
+    conflict = 0
+    if conflict_source is not None:
+        # conflict-ignored = ignore pixels that were covered by at least one region
+        conflict = int(((label_map == IGNORE_INDEX) & conflict_source).sum())
+    return {
+        "pixels_total": int(label_map.size),
+        "pixels_labeled": labeled,
+        "pixels_uncovered": uncovered,
+        "pixels_conflict_ignored": conflict,
+        "pixels_assigned": labeled,
     }
 
 
@@ -191,4 +223,5 @@ __all__ = [
     "method_predictions",
     "method_score_matrices",
     "pixel_confusion",
+    "semantic_map_stats",
 ]

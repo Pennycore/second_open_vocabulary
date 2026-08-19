@@ -1,0 +1,76 @@
+{
+  "format_version": 1,
+  "name": "pixel_ovss_protocol_v0",
+  "status": "frozen_pre_result",
+  "role": "Pixel-level open-vocabulary semantic segmentation evaluation of CTP-v1 and baselines; converts region-level semantic calibration into semantic segmentation without new proposal networks",
+  "scientific_evidence": true,
+  "dataset_status": {
+    "LoveDA": "development-after-P0",
+    "Vaihingen": "untouched_external_confirmation (predict hashes frozen before GT read)",
+    "Potsdam": "pending untouched audit before use"
+  },
+  "region_proposal_source": {
+    "rule": "inherit first-paper SAM3 candidate masks (frozen); no new proposal network",
+    "love_da": "first-paper candidate caches (candidate_cache npz/json, SAM3-driven) for the registered heldout images",
+    "vaihingen": "runs/vaihingen_sam3_v0/candidates/*.npz (16 GT areas; user-authorized SAM3 rerun with all-positive image-level assumption)",
+    "prohibited": ["new proposal network", "SAM3 rerun beyond already-frozen assets", "GT-derived proposals"]
+  },
+  "semantic_assignment": {
+    "rule": "OpenAI CLIP ViT-B/32 quick-GELU region features + frozen prototypes; per-region class via method scores",
+    "methods": ["text_only", "C2", "SCC", "CTP"],
+    "ctp_frozen_ref": "configs/ctp_v1_frozen.json",
+    "alpha": 0.5,
+    "prompts": "8 Group-A templates (class names dataset-specific)",
+    "visual_prototype": "train-area SAM3 weak labels: L2 per region -> class mean -> L2"
+  },
+  "mask_fusion": {
+    "canvas": "first-paper FusionCanvas semantics (labels/scores/background_scores tensors)",
+    "overlap_resolution": "per-pixel highest region score wins; ties broken by class id order; conflict margin 0.03 between region scores (from FusionCanvas)",
+    "uncovered_pixels": "pixels not covered by any candidate mask receive uncovered_label=255 (ignore)",
+    "background_handling": "no explicit background class in the 5/6-class vocabulary; uncovered=ignore; clutter (Vaihingen red) is ignore in GT",
+    "ignore_index": 255,
+    "semantic_map": "uint8 label map per image assembled from per-region assigned classes and their masks"
+  },
+  "gt_isolation": {
+    "order": ["predictions computed", "prediction/config/support hashes persisted", "then GT opened", "then evaluation"],
+    "predict_phase_forbidden": ["semantic GT", "pixel labels", "evaluation masks", "GT-derived statistics", "GT-based rule tuning"],
+    "hash_binding": ["prediction files (scores, per-region class ids, semantic maps)", "frozen config (ctp_v1_frozen.json + pixel protocol)", "support-subset manifest"],
+    "evaluate_requires": ["predict manifest verified", "all hashes match", "then GT read allowed"]
+  },
+  "evaluation": {
+    "level": "pixel",
+    "metrics": ["OA", "mIoU", "Macro F1", "S-IoU", "U-IoU", "H-IoU", "per-class IoU", "confusion matrix"],
+    "partial_support": "enumerate non-trivial support subsets (LoveDA 6 classes: 2^6=64; Vaihingen 5 classes: 2^5=32) OR fixed ratios 25/50/75% with seeds 42/43/44 pre-registered; subset lists saved before GT read",
+    "H_aggregation": "mean over subsets of per-subset H (mean(H_i))",
+    "ignore_rule": "uncovered/ignore pixels excluded from all metrics; same valid pixel set for all methods",
+    "bootstrap": {"seed": 42, "repeats": 5000, "cluster": "image_id", "deltas": ["OA", "mIoU", "Macro F1", "H-IoU"], "comparisons": ["CTP vs Text-only", "CTP vs C2", "CTP vs SCC", "CTP vs Guard"]}
+  },
+  "constraints": {
+    "training": false,
+    "adapter": false,
+    "learned_gating": false,
+    "new_proposal_network": false,
+    "alpha_tuning": false,
+    "prompt_tuning": false,
+    "threshold_tuning": false,
+    "margin_tuning": false,
+    "temperature": false,
+    "beta": false,
+    "gt_before_predictions": false,
+    "gt_based_rule_tuning": false,
+    "remoteclip": false,
+    "dino": false,
+    "multi_prototype": false,
+    "overwrite": false
+  },
+  "pipeline_stages": [
+    "load frozen SAM3 candidate masks per test image",
+    "encode region crops with frozen OpenAI CLIP (no re-encoding beyond frozen cache rules)",
+    "compute T_c, A_c, S_c^SCC, CTP decision per region (frozen formulas)",
+    "assign class to each candidate region per method",
+    "assemble semantic map via frozen FusionCanvas rules (overlap/uncovered/ignore)",
+    "persist per-method semantic maps + scores + config + hashes",
+    "read GT",
+    "compute pixel metrics, partial-support S/U/H, cluster bootstrap"
+  ]
+}

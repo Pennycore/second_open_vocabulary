@@ -1,0 +1,11 @@
+experiment:
+  name: pixel_ovss_loveda_v0
+  overwrite: false
+
+paths:
+  pixel_pack: /home/undergr/Sheungzhen_project_2/second_open_vocabulary/workspaces/openai_clip_715cb5c/inputs/encoder_compare_pack_v0/run_20260814_001/pixel_pack
+  region_scores_npz: /home/undergr/Sheungzhen_project_2/second_open_vocabulary/workspaces/openai_clip_715cb5c/outputs/loveda_blind_gt_v0/predictions.npz
+  heldout_keys_jsonl: /home/undergr/Sheungzhen_project_2/second_open_vocabulary/workspaces/openai_clip_715cb5c/outputs/loveda_blind_gt_v0/heldout_keys.jsonl
+  label_dir: /home/undergr/remote_dataset/LoveDA_main_v1/train/labels
+  protocol_file: configs/pixel_ovss_protocol_v0.json
+  output_root: outputs/pixel_ovss_loveda_v0

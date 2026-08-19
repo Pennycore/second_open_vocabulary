@@ -1,0 +1,11 @@
+experiment:
+  name: pixel_score_scale_ablation_v0
+  overwrite: false
+
+paths:
+  candidates_dir: /home/undergr/Sheungzhen_project_1/sam3_remote_wsss/runs/vaihingen_sam3_v0/candidates
+  region_scores_npz: /home/undergr/Sheungzhen_project_2/second_open_vocabulary/workspaces/openai_clip_715cb5c/outputs/vaihingen_blind_scc_v1/predictions.npz
+  records_jsonl: /home/undergr/Sheungzhen_project_2/second_open_vocabulary/workspaces/openai_clip_715cb5c/outputs/vaihingen_blind_scc_v1/records.jsonl
+  label_dir: null
+  protocol_file: configs/pixel_ovss_protocol_v0.json
+  output_root: outputs/pixel_score_scale_ablation_v0

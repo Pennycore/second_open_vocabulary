@@ -1,7 +1,7 @@
 # RemoteCLIP Vaihingen baseline — completed run record
 
-Date: 2026-08-20  
-Evidence class: controlled backbone-replacement baseline  
+Date: 2026-08-20
+Evidence class: controlled backbone-replacement baseline
 Status: completed; immutable new output only
 
 ## Scope and frozen protocol

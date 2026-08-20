@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-08-20",
+  "path_policy": "All locations are project-relative placeholders. Exact machine paths are retained only in ignored private inventory.",
+  "local_snapshot_scope": [
+    "<PROJECT>/outputs",
+    "<PROJECT>/reports",
+    "<PROJECT>/configs",
+    "<PROJECT>/docs",
+    "<PROJECT>/src",
+    "<PROJECT>/scripts",
+    "<PROJECT>/tests",
+    "<PROJECT>/pyproject.toml",
+    "<PROJECT>/README.md",
+    "<PROJECT>/AGENTS.md",
+    "<PROJECT>/.gitignore",
+    "three_preexisting_transient_vaihingen_scripts"
+  ],
+  "server_snapshot_scope": [
+    "<SERVER_WORKSPACE>/outputs",
+    "<SERVER_WORKSPACE>/reports",
+    "<SERVER_WORKSPACE>/configs",
+    "<SERVER_WORKSPACE>/docs",
+    "<SERVER_WORKSPACE>/src",
+    "<SERVER_WORKSPACE>/scripts",
+    "<SERVER_WORKSPACE>/tests",
+    "<SERVER_WORKSPACE>/pyproject.toml",
+    "<SERVER_WORKSPACE>/README.md",
+    "<SERVER_WORKSPACE>/AGENTS.md",
+    "<SERVER_WORKSPACE>/.gitignore"
+  ],
+  "excluded_materials": [
+    "raw datasets",
+    "inputs",
+    "checkpoints and weights",
+    "Git metadata",
+    "cache directories",
+    "temporary Git bundles"
+  ],
+  "known_server_snapshot": {
+    "workspace_head": "51ec14981ecf746fd8ef15bba534ef664a20c7ae",
+    "output_file_count": 173760,
+    "output_size_reported": "1.4G",
+    "tracked_status": "tracked tree clean; untracked experimental files present and included in source snapshot"
+  },
+  "gaps": [
+    "No complete conversation transcript export.",
+    "No byte-reproducible LLM reasoning record.",
+    "Exact local and server environment lockfiles may be incomplete.",
+    "Raw datasets and weights are not duplicated."
+  ]
+}

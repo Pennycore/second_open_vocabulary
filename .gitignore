@@ -23,6 +23,10 @@ logs/
 *.tmp
 *.bak
 
+# Local-only research traceability payloads; the tracked index is in research_archive/.
+research_archive/artifacts/
+research_archive/private/
+
 # Large data/run directories that may appear on a workstation or server
 data/
 datasets/

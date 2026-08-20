@@ -1,0 +1,4 @@
+# SHA-256 values for immutable dated artifact payloads.
+# Generated after artifact validation; repository bundle checksum is intentionally in ignored private inventory to avoid self-reference.
+c39019fe5169aaa74ae66fe1745d154671ec5dfbeabe1da1524c6ca9234590d5  research_archive/artifacts/remote_2080ti_workspace_outputs_20260820.tar.gz
+cad94ae065e5b7a3075afc8a67de1d8f94f13802150687d640ac2634918b9d1c  research_archive/artifacts/local_project_outputs_reports_20260820.tar.gz

@@ -1,0 +1,18 @@
+{
+  "project": "second_open_vocabulary",
+  "snapshot_date": "2026-08-20",
+  "codex_runtime_model_id": "unknown_not_captured_in_project_artifacts",
+  "weight_stable": false,
+  "tooling": {
+    "ars_adapter_version": "0.1.24",
+    "academic_pipeline_version": "3.19.0",
+    "academic_research_suite_skill_sha256": "8ed244709d02abe224e6726d6a706b88080c70c6a73c0f2038404c9a0dee0e6c"
+  },
+  "materials_inventory": "inventories/curated_inventory.json",
+  "materials_inventory_sha256": "2a338ba50c9cf979faf3ccd55c24999539365a3e2e6402e9157710ed813417a6",
+  "external_snapshot_available": true,
+  "external_snapshot": "artifacts/remote_2080ti_workspace_outputs_20260820.tar.gz",
+  "deterministic_replay_claim": false,
+  "stochasticity_declaration": "Results are not claimed to be byte-identically reproducible. GPU kernels, library versions, data-loader ordering, random seeds where recorded, and external environment state can affect replay. Frozen configurations, source commits, manifests, hashes, and dated source/output snapshots are retained to support bounded forensic reproduction.",
+  "raw_material_policy": "Large raw datasets and model weights are referenced by manifests and hashes when available; they are not duplicated in this archive."
+}

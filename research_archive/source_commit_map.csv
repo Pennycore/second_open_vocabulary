@@ -1,0 +1,16 @@
+experiment_or_run,recorded_code_commit,availability_in_full_bundle,source_snapshot_coverage,notes
+ov_probe_and_region_probe,01c8119_or_ec1a661,yes,local_and_server,Exact per-run source state may differ; use run manifest where present.
+openai_clip_region_probe,715cb5c,yes,server,Formal region diagnostic code commit recorded.
+openai_clip_feature_cache,2cd41e6,yes,server,Feature-cache source commit recorded.
+openai_clip_visual_anchor,2302ca4,yes,server,Exploratory visual-anchor source commit recorded.
+voc_data_manifest,5e9e088,yes,server,Corrected JPEG inventory protocol commit recorded.
+voc_zeroshot,4afe7b0,yes,server,Image-level prediction cache source commit recorded.
+voc_presence_eval,51ec149,yes,local_and_server,Evaluation source commit recorded.
+loveda_blind_gt,6d90a93,yes,local_and_server,Subsequent audit commits extend analysis; see registry.
+scc_and_partial_support,8151c2a_or_f5d7d91,yes,local_and_server,Multiple commits; exact analysis files map by Git history.
+vaihingen_external,056059a,yes,local_and_server,External confirmation commit recorded.
+ctp_freeze_and_pixel_ovss,794f9ef_or_4ad33c8,yes,local_and_server,Method freeze and pixel pipeline have distinct commits.
+potsdam_ctp,2704f99,yes,local_and_server,Latest external confirmation implementation commit recorded.
+final_audits,ab64c0c,yes,local_and_server,Final tracked audit commit; server snapshot also captures uncommitted helper code.
+server_uncommitted_workspace,unknown,not_as_commit,server,Archived only in dated server source snapshot; never attribute it to a commit.
+local_transient_vaihingen_helpers,unknown,not_as_commit,local,Three pre-existing scripts are included only in dated local snapshot.

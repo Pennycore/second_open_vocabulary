@@ -4,6 +4,14 @@
 审计范围：本地第二篇工程 `C:\Users\28457\Desktop\open_vocabulary`，以及双 2080 Ti 上的只读工作区和第一篇工程中的既有资产。  
 本文件是后续 baseline 的前置门禁，不是新的实验结果。除明确标为 `COMPLETED` 的既有输出外，RemoteCLIP 的下列矩阵均为 `PREPARED / NOT RUN`。
 
+## 0. Potsdam RemoteCLIP partial-support attempt（2026-08-20，stopped）
+
+为补充已完成 `run_20260820_002` 的 partial-support 指标，新增了仅使用既有 RemoteCLIP `predictions.npz`、`records.jsonl`、冻结的 CTP-v1 配置、Potsdam support-subset manifest 以及第一篇已落盘 candidate masks 的离线 evaluator。预检已通过：RemoteCLIP 预测缓存、records 行号与 candidate 顺序/元数据、候选目录 SHA-256、support-manifest SHA-256、RemoteCLIP protocol SHA-256 和 CTP-v1 frozen SHA-256 均成功绑定；预检完成后才允许读取 GT。此尝试没有加载模型、没有读取 OpenAI CLIP 特征、没有重跑 SAM3，也没有改变 prompt、alpha、prototype construction、FusionCanvas 或 CTP-v1。
+
+该 evaluator 对每个 candidate-bearing image 顺序重建 `9` 个预注册 support subset × `4` 个方法的 FusionCanvas。由于未实现跨 subset/method 的画布聚合复用，完整运行 20 分 21 秒后仍未产生指标；按性能门限已主动停止。目录 `outputs/baselines/remoteclip/potsdam_v0/partial_run_20260820_001/` **仅包含 pre-GT validation manifest**，没有 `metrics.json`、`metrics.csv`、`report.md` 或 partial semantic maps，故它是 stopped attempt，**不是实验结果，不得进入表格、比较或结论**。相关源码 `scripts/evaluate_remoteclip_potsdam_partial.py` 与单测 `tests/test_remoteclip_potsdam_partial.py` 仅作为可追溯的 attempted-but-stopped 实现保存。
+
+已完成的 full-support `run_20260820_002` 及其已登记数值完全不变。Vaihingen RemoteCLIP 仍为 **PREPARED / NOT RUN**；SegEarth-OV 仍仅处于 feasibility audit 状态，均未因本次停止尝试而改变。
+
 ## 1. 已登记的数据集、方法与冻结对象
 
 | 类别 | 已有对象 | 审计状态 |

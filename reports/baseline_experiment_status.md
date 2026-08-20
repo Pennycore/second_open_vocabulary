@@ -94,3 +94,11 @@ outputs/baselines/
 ```
 
 结论：RemoteCLIP 已具备**资产级可行性**（已知 checkpoint、512-D 空间、可复现的 LoveDA bridge 规则），但尚未具备**Vaihingen/Potsdam CTP baseline 已完成**的证据。当前正确状态是“准备完成、等待冻结的实现与一次性受控运行”，不是“已有 robustness 结果”。
+
+## 6. 执行后状态（2026-08-20）
+
+Potsdam 的 RemoteCLIP full-support baseline 已完成，受控输出位于远端隔离工作区的 `outputs/baselines/remoteclip/potsdam_v0/run_20260820_002/`。该 run 使用既有 Potsdam test patches 与冻结的 SAM3 candidates；共包含 3,502 个 candidate-bearing images、45,488 个 regions。RemoteCLIP Text-only、C2、SCC 与 CTP-v1 均已完成；数值见同一 run 的 `metrics.csv` 与 `report.md`。预测阶段先完成并冻结清单，随后才读取 GT；GT phase 后 manifest 标记为 `scientific_evidence=true`。
+
+这不改变已冻结的协议：没有重跑 SAM3、训练或调整 prompt、alpha、prototype construction、FusionCanvas 或 CTP-v1。该 run 不读取或复用 OpenAI CLIP features/scores；OpenAI CLIP 仅作为 `report.md` 中明确标记的受控、不同-backbone 对照。
+
+Vaihingen RemoteCLIP 仍为 **PREPARED / NOT RUN**，不得将 Potsdam 结果外推为 Vaihingen 结果。SegEarth-OV 仍仅完成 feasibility audit，尚未作为可直接混合报告的外部 baseline。首次 `run_20260820_001` 在模型加载前因执行层摘要门禁格式不一致而停止，目录为空，不构成实验结果，也不得纳入任何表格或结论。

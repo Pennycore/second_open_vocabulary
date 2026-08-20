@@ -12,5 +12,6 @@ vaihingen_external,056059a,yes,local_and_server,External confirmation commit rec
 ctp_freeze_and_pixel_ovss,794f9ef_or_4ad33c8,yes,local_and_server,Method freeze and pixel pipeline have distinct commits.
 potsdam_ctp,2704f99,yes,local_and_server,Latest external confirmation implementation commit recorded.
 final_audits,ab64c0c,yes,local_and_server,Final tracked audit commit; server snapshot also captures uncommitted helper code.
+remoteclip_potsdam_baseline,cef2c49+9cb17c2 (remote workspace HEAD 7aecc73),yes,server,"Full run manifest SHA256 c7ff55defbf7c668a4f80210c3787fb5d87687a153480f2df5a7931bf501a3af; report SHA256 d4c3a39a581007dd798bfb0f3298861c04838ce81f9143141e8e72f4bac4ad63."
 server_uncommitted_workspace,unknown,not_as_commit,server,Archived only in dated server source snapshot; never attribute it to a commit.
 local_transient_vaihingen_helpers,unknown,not_as_commit,local,Three pre-existing scripts are included only in dated local snapshot.

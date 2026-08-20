@@ -11,6 +11,7 @@ Dates below come from Git history, frozen protocols, reports, and output manifes
 | 2026-08-18 | LoveDA GT-isolated evaluation, prototype stability, score audit, calibration, partial-support analysis, and SCC freeze were recorded. | commits `6d90a93` through `8151c2a`; corresponding reports |
 | 2026-08-19 | Vaihingen external confirmation, CTP freeze, pixel-level semantic-map experiments, score-scale ablation, and Potsdam protocol/prediction locks were recorded. | commits `056059a` through `2704f99` |
 | 2026-08-20 | Final common-pixel, cluster-bootstrap, Guard, and qualitative audits were recorded. | commit `ab64c0c`; final audit reports |
+| 2026-08-20 | Controlled RemoteCLIP backbone-replacement baseline completed on Potsdam full support; partial-support evaluation was intentionally not completed. | commits `cef2c49`, `9cb17c2`; remote workspace HEAD `7aecc73`; RemoteCLIP run manifest and report |
 | 2026-08-20 | This local traceability index and dated machine snapshots were created. | `research_archive/` and dated artifacts |
 
 ## Interpretation boundary

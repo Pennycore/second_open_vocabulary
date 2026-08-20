@@ -9,6 +9,7 @@
 | Report VOC correctly. | VOC presence mAP is image-level multi-label presence evaluation; it is **not** segmentation mIoU and must not be described as such. | `outputs/voc2012_openai_clip_presence_eval_v1/run_20260815_001/metrics.json`; commit `51ec149` |
 | Disclose visual-anchor chronology. | The first all-6,000 baseline predates the later holdout; visual-anchor heldout findings are exploratory/post-hoc and cannot be used as blind confirmation. | visual-anchor protocol and timeline |
 | Retain raw-material references rather than duplicate them. | Large datasets and weights are referenced through manifests/hashes; dated snapshots retain code/config/report/output evidence without replicating raw material. | material passport and manifests |
+| Treat RemoteCLIP strictly as a controlled backbone replacement. | The Potsdam full-support baseline substitutes only the backbone while retaining the frozen protocol; it does not modify CTP-v1 or establish a new method. Partial-support evaluation was stopped after the pre-GT `partial_run_20260820_001` manifest, and Vaihingen RemoteCLIP remains not run. | `<SERVER_OUTPUTS>/baselines/remoteclip/potsdam_v0/run_20260820_002/`; commits `cef2c49`, `9cb17c2`; remote workspace HEAD `7aecc73` |
 
 ## Reproducibility caveats
 

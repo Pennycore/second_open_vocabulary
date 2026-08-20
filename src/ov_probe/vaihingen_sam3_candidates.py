@@ -26,6 +26,7 @@ from .io import InputValidationError, sha256_file
 
 
 CHECKPOINT_PLACEHOLDER = "UNSET_REPLACE_WITH_VERIFIED_SHA256_BEFORE_RUN"
+DTYPE_GUARD = "first_paper_fp32_input_hooks"
 REQUIRED_CACHE_KEYS = {
     "format_version", "image_shape", "packed_masks", "offsets", "shapes",
     "origins", "boxes", "areas", "scores", "class_ids", "prompt_ids",
@@ -231,7 +232,7 @@ def _load_runtime(preflight: Preflight) -> dict[str, Any]:
         from sam3_remote_wsss.config import ClassSpec, PromptingConfig
         from sam3_remote_wsss.fusion import filter_masks
         from sam3_remote_wsss.prompts import prompts_for_class
-        from sam3_remote_wsss.sam3_backend import SAM3ImageBackend
+        from sam3_remote_wsss.sam3_backend import SAM3ImageBackend, _install_fp32_dtype_hooks
     except Exception as exc:
         raise InputValidationError(f"Cannot load read-only SAM3 backend: {type(exc).__name__}: {exc}") from exc
     return {
@@ -239,7 +240,20 @@ def _load_runtime(preflight: Preflight) -> dict[str, Any]:
         "ClassSpec": ClassSpec, "PromptingConfig": PromptingConfig,
         "filter_masks": filter_masks, "prompts_for_class": prompts_for_class,
         "SAM3ImageBackend": SAM3ImageBackend,
+        "install_fp32_dtype_hooks": _install_fp32_dtype_hooks,
     }
+
+
+def _build_backend(runtime: dict[str, Any], paths: dict[str, Path], proposal: dict[str, Any]) -> Any:
+    """Construct the read-only backend and apply its existing FP32 input guard."""
+    backend = runtime["SAM3ImageBackend"](
+        paths["sam3_repo"], paths["sam3_checkpoint"],
+        device=str(proposal["device"]), confidence_threshold=float(proposal["score_threshold"]),
+    )
+    # This is the first-paper helper, applied only at the second-paper runtime
+    # boundary to prevent BF16 SAM3 activations reaching FP32 ViTDet weights.
+    runtime["install_fp32_dtype_hooks"](backend.model)
+    return backend
 
 
 def _read_rgb(path: Path, bands: list[int]) -> np.ndarray:
@@ -326,7 +340,11 @@ def _run(preflight: Preflight) -> Path:
     stage = run_dir / ".staging" / "candidates"
     stage.mkdir(parents=True, exist_ok=False)
     started = dict(preflight.manifest)
-    started.update({"status": "running", "run_dir": str(run_dir), "code_commit": _commit_hash(), "environment": {**preflight.manifest["environment"], "cuda_checked": True, "gpu": gpu}})
+    started.update({
+        "status": "running", "run_dir": str(run_dir), "code_commit": _commit_hash(),
+        "runtime_compatibility": {"dtype_guard": DTYPE_GUARD},
+        "environment": {**preflight.manifest["environment"], "cuda_checked": True, "gpu": gpu},
+    })
     _write_json_exclusive(run_dir / "manifest.json", started)
     try:
         specs = [runtime["ClassSpec"](id=int(item["id"]), name=str(item["name"]), label_color=tuple(item["label_color"]), prompts=tuple(item["prompts"])) for item in protocol["classes"]]
@@ -335,7 +353,7 @@ def _run(preflight: Preflight) -> Path:
         expected_prompts = {item["name"]: item["prompts"] for item in protocol["classes"]}
         if prompts != expected_prompts:
             raise InputValidationError("Read-only prompt backend produced prompts different from the frozen protocol.")
-        backend = runtime["SAM3ImageBackend"](paths["sam3_repo"], paths["sam3_checkpoint"], device=str(proposal["device"]), confidence_threshold=float(proposal["score_threshold"]))
+        backend = _build_backend(runtime, paths, proposal)
         candidate_files: dict[str, Any] = {}
         for image_id in protocol["input_contract"]["image_ids"]:
             image_path = paths["image_dir"] / protocol["input_contract"]["image_filename_pattern"].format(image_id=image_id)
@@ -357,6 +375,7 @@ def _run(preflight: Preflight) -> Path:
                 "tile_size": proposal["tile_size"], "tile_overlap": proposal["tile_overlap"],
                 "score_threshold": proposal["score_threshold"], "min_mask_area": proposal["min_mask_area"],
                 "max_mask_area_ratio": proposal["max_mask_area_ratio"], "labels_read": False,
+                "dtype_guard": DTYPE_GUARD,
             })
             candidate_files[image_id] = _validate_candidate_cache_schema(stage, image_id, (height, width))
         final_candidates = run_dir / "candidates"
@@ -380,6 +399,6 @@ def dry_run_manifest(config_path: str | Path) -> dict[str, Any]:
 
 
 __all__ = [
-    "CHECKPOINT_PLACEHOLDER", "Preflight", "Tile", "_load_config", "_preflight",
+    "CHECKPOINT_PLACEHOLDER", "DTYPE_GUARD", "Preflight", "Tile", "_build_backend", "_load_config", "_preflight",
     "_run", "_validate_candidate_cache_schema", "dry_run_manifest", "enumerate_tiles",
 ]

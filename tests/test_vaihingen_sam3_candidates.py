@@ -10,6 +10,8 @@ import pytest
 from ov_probe.io import InputValidationError
 from ov_probe.vaihingen_sam3_candidates import (
     CHECKPOINT_PLACEHOLDER,
+    DTYPE_GUARD,
+    _build_backend,
     _load_config,
     _validate_candidate_cache_schema,
     _write_json_exclusive,
@@ -26,6 +28,29 @@ def test_tile_enumeration_uses_frozen_shift_at_edge_rule():
         (0, 0, 512, 512), (384, 0, 896, 512), (488, 0, 1000, 512),
         (0, 88, 512, 600), (384, 88, 896, 600), (488, 88, 1000, 600),
     ]
+
+
+def test_runtime_reuses_first_paper_fp32_input_hook_after_backend_construction(tmp_path: Path):
+    events: list[tuple[str, object]] = []
+
+    class FakeBackend:
+        def __init__(self, repo, checkpoint, *, device, confidence_threshold):
+            events.append(("backend", (repo, checkpoint, device, confidence_threshold)))
+            self.model = object()
+
+    def fake_hook(model):
+        events.append(("hook", model))
+
+    paths = {"sam3_repo": tmp_path / "sam3", "sam3_checkpoint": tmp_path / "sam3.pt"}
+    proposal = {"device": "cuda", "score_threshold": 0.55}
+    backend = _build_backend(
+        {"SAM3ImageBackend": FakeBackend, "install_fp32_dtype_hooks": fake_hook}, paths, proposal,
+    )
+    assert events == [
+        ("backend", (paths["sam3_repo"], paths["sam3_checkpoint"], "cuda", 0.55)),
+        ("hook", backend.model),
+    ]
+    assert DTYPE_GUARD == "first_paper_fp32_input_hooks"
 
 
 def test_prompt_and_class_schema_remain_first_paper_vaihingen_contract():

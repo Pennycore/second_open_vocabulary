@@ -10,7 +10,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from ov_probe.io import InputValidationError, sha256_file
-from ov_probe.pixel_ovss import assemble_semantic_map, load_candidate_masks, pixel_confusion
+from ov_probe.pixel_ovss import assemble_semantic_map, load_candidate_masks
 from ov_probe.remoteclip_potsdam_baseline import (
     CLASSES,
     COLORS,
@@ -21,6 +21,7 @@ from ov_probe.remoteclip_potsdam_baseline import (
     crop_views,
     directory_sha256,
     load_config,
+    pixel_confusion_fast,
     score_methods,
     text_prototypes,
 )
@@ -160,7 +161,7 @@ def main() -> int:
         for method in METHODS:
             with np.load(out / f"{method}_{image_id}_semantic.npz", allow_pickle=False) as a:
                 pred = a["label_map"].astype(np.int64)
-            results[method].append(pixel_confusion(pred, gt, CLASSES))
+            results[method].append(pixel_confusion_fast(pred, gt, CLASSES))
     overall = {method: _aggregate(results[method]) for method in METHODS}
     with (out / "metrics.json").open("x", encoding="utf-8") as handle:
         json.dump(overall, handle, indent=2, sort_keys=True)

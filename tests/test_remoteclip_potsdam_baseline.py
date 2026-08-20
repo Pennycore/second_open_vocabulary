@@ -1,6 +1,7 @@
 import numpy as np
 
-from ov_probe.remoteclip_potsdam_baseline import CLASSES, crop_views, score_methods
+from ov_probe.pixel_ovss import pixel_confusion
+from ov_probe.remoteclip_potsdam_baseline import CLASSES, crop_views, pixel_confusion_fast, score_methods
 
 def test_crop_views_reconstructs_masked_uint8():
     image=np.full((32,32,3),100,dtype=np.uint8); mask=np.zeros((8,8),dtype=bool); mask[2:6,2:6]=True
@@ -20,3 +21,12 @@ def test_score_methods_full_support_has_all_methods():
 
 def test_remoteclip_classes_are_potsdam_five():
     assert CLASSES==['impervious_surface','building','low_vegetation','tree','car']
+
+
+def test_fast_confusion_is_identical_to_frozen_implementation():
+    rng = np.random.default_rng(2)
+    pred = rng.integers(0, 6, size=(11, 13), dtype=np.int64)
+    gt = rng.integers(0, 6, size=(11, 13), dtype=np.int64)
+    pred[0, :3] = 255
+    gt[1, :3] = 255
+    assert pixel_confusion_fast(pred, gt, CLASSES) == pixel_confusion(pred, gt, CLASSES)

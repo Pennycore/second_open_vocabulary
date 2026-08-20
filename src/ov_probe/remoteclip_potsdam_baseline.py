@@ -15,7 +15,7 @@ import numpy as np
 
 from .io import InputValidationError, sha256_file
 from .loveda_partial_support import ctp_predictions, scc_scores
-from .pixel_ovss import assemble_semantic_map, load_candidate_masks, pixel_confusion
+from .pixel_ovss import assemble_semantic_map, load_candidate_masks
 
 CLASSES = ["impervious_surface", "building", "low_vegetation", "tree", "car"]
 COLORS = {
@@ -166,4 +166,41 @@ def _aggregate(results: list[dict[str, Any]]) -> dict[str, Any]:
     return {"OA": float(np.trace(matrix)/valid) if valid else 0.0, "macro_f1": float(np.mean(list(per_f1.values()))), "mIoU": float(np.mean(list(per_iou.values()))), "per_class_f1": per_f1, "per_class_iou": per_iou, "confusion_matrix": matrix.tolist(), "valid_pixels": valid}
 
 
-__all__ = ["CLASSES", "METHODS", "COLORS", "crop_views", "score_methods", "load_config", "directory_sha256", "_load_model", "text_prototypes", "_normalize", "_aggregate"]
+def pixel_confusion_fast(
+    pred_map: np.ndarray,
+    gt_map: np.ndarray,
+    classes: list[str] = CLASSES,
+    ignore: int = 255,
+) -> dict[str, Any]:
+    """Vectorized, metric-identical substitute for the frozen pixel confusion loop."""
+    if pred_map.shape != gt_map.shape:
+        raise InputValidationError("Prediction and GT maps must have identical shapes.")
+    n_classes = len(classes)
+    valid = (gt_map != ignore) & (pred_map != ignore)
+    pred = np.asarray(pred_map[valid], dtype=np.int64)
+    gt = np.asarray(gt_map[valid], dtype=np.int64)
+    in_range = (0 <= gt) & (gt < n_classes) & (0 <= pred) & (pred < n_classes)
+    codes = gt[in_range] * n_classes + pred[in_range]
+    matrix = np.bincount(codes, minlength=n_classes * n_classes).reshape(n_classes, n_classes)
+    per_iou, per_f1 = {}, {}
+    for i, name in enumerate(classes):
+        tp = float(matrix[i, i])
+        fp = float(matrix[:, i].sum() - tp)
+        fn = float(matrix[i, :].sum() - tp)
+        per_iou[name] = tp / (tp + fp + fn) if tp + fp + fn else 0.0
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        per_f1[name] = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return {
+        "OA": float((pred == gt).mean()) if len(pred) else 0.0,
+        "macro_f1": float(np.mean(list(per_f1.values()))),
+        "mIoU": float(np.mean(list(per_iou.values()))),
+        "per_class_iou": per_iou,
+        "per_class_f1": per_f1,
+        "confusion_matrix": matrix.tolist(),
+        "valid_pixels": int(len(pred)),
+        "ignore_pixels": int((~valid).sum()),
+    }
+
+
+__all__ = ["CLASSES", "METHODS", "COLORS", "crop_views", "score_methods", "load_config", "directory_sha256", "_load_model", "text_prototypes", "_normalize", "_aggregate", "pixel_confusion_fast"]

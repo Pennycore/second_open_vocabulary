@@ -1,0 +1,41 @@
+# Frozen, portable deployment contract for the 3090v2 RemoteCLIP Vaihingen run.
+# All paths are relative to this second-paper project root.  Populate inputs/
+# locally on the target machine; this file deliberately contains no credentials
+# or first-project absolute paths.
+experiment:
+  name: remoteclip_vaihingen_all_v0
+  overwrite: false
+  run_prefix: run_
+
+paths:
+  image_dir: inputs/vaihingen/images
+  label_dir: inputs/vaihingen/labels
+  candidates_dir: inputs/vaihingen/sam3_candidates
+  # A read-only copy of the SAM3 cache reader only. It is required to decode
+  # the frozen candidate cache; the runner never invokes SAM3.
+  sam3_python_root: inputs/sam3_remote_wsss/src
+  remoteclip_checkpoint: inputs/checkpoints/RemoteCLIP-ViT-B-32.pt
+  remoteclip_protocol_file: configs/remoteclip_potsdam_baseline_protocol_v0.json
+  ctp_frozen_file: configs/ctp_v1_frozen.json
+  output_root: outputs/baselines/remoteclip/vaihingen_v0
+
+runtime:
+  device: cuda
+  required_gpu_substring: RTX 3090
+  image_batch: 32
+
+split:
+  train_areas: [1, 3, 5, 7, 13, 17, 21, 23, 26, 32, 37]
+  test_areas: [11, 15, 28, 30, 34]
+
+matrix:
+  # SCC is deliberately opt-in: the minimum registered comparison is Text/C2/CTP.
+  full_support_methods: [text_only, C2, CTP]
+  partial_support_methods: [text_only, C2, CTP]
+  partial_support_counts: [2, 3, 4]
+  partial_subset_policy: all_deterministic_bitmasks
+
+integrity:
+  remoteclip_checkpoint_sha256: 60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4
+  required_open_clip_version: 3.3.0
+  required_feature_dimension: 512

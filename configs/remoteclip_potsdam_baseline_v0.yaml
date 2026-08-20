@@ -1,0 +1,13 @@
+experiment:
+  name: remoteclip_potsdam_baseline_v0
+  overwrite: false
+paths:
+  candidates_dir: /home/undergr/Sheungzhen_project_1/sam3_remote_wsss/runs/potsdam_sam3_test_v1/candidates
+  image_dir: /home/undergr/remote_dataset/Potsdam_test_v1/images
+  label_dir: /home/undergr/remote_dataset/Potsdam_test_v1/labels
+  checkpoint: /home/undergr/Sheungzhen_project_1/checkpoints/RemoteCLIP-ViT-B-32.pt
+  protocol_file: configs/remoteclip_potsdam_baseline_protocol_v0.json
+  output_root: outputs/baselines/remoteclip/potsdam_v0
+runtime:
+  device: auto
+  image_batch: 32

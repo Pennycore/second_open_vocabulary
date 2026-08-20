@@ -1,0 +1,38 @@
+{
+  "format_version": 1,
+  "name": "remoteclip_potsdam_baseline_v0",
+  "status": "frozen_pre_result",
+  "dataset": "ISPRS Potsdam 2D Semantic Labeling",
+  "split": "existing Potsdam test-patch split and SAM3 candidate cache; no proposal rerun",
+  "classes": ["impervious_surface", "building", "low_vegetation", "tree", "car"],
+  "model": {
+    "identity": "RemoteCLIP ViT-B/32",
+    "architecture": "ViT-B-32",
+    "open_clip_version": "3.3.0",
+    "feature_dimension": 512,
+    "checkpoint_sha256": "60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4",
+    "load_policy": "weights_only=True, strict=False with missing/unexpected keys recorded, eval mode",
+    "device_policy": "cuda if available"
+  },
+  "prompts": {
+    "group_a_templates": ["{class}", "a photo of {class}", "an aerial image of {class}", "a satellite image of {class}", "a remote sensing image of {class}", "{class} in an aerial image", "{class} in a satellite image", "a region of {class} viewed from above"]
+  },
+  "visual_view_fusion": "context and mask-emphasized crop; each image feature L2-normalized, arithmetic mean, then L2-normalized",
+  "alpha": 0.5,
+  "methods": ["text_only", "C2", "SCC", "CTP"],
+  "ctp_formula_reference": "configs/ctp_v1_frozen.json",
+  "fusion_canvas": {"name": "FusionCanvas", "conflict_margin": 0.03, "ignore_index": 255, "uncovered": 255},
+  "gt_isolation": {"predict_phase_reads_gt": false, "evaluate_phase_reads_gt": true},
+  "constraints": {
+    "training": false,
+    "adapter": false,
+    "prompt_tuning": false,
+    "alpha_tuning": false,
+    "threshold_tuning": false,
+    "prototype_construction_change": false,
+    "candidate_rerun": false,
+    "openai_feature_reuse": false,
+    "openai_score_reuse": false,
+    "overwrite": false
+  }
+}

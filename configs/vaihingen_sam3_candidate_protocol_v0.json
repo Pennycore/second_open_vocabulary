@@ -1,0 +1,58 @@
+{
+  "format_version": 1,
+  "name": "vaihingen_sam3_candidate_protocol_v0",
+  "status": "frozen_pre_run",
+  "purpose": "Generate SAM3 foreground candidate caches for the fixed Vaihingen areas used by the second-paper RemoteCLIP baseline.",
+  "dataset": "ISPRS Vaihingen 2D Semantic Labeling",
+  "input_contract": {
+    "image_ids": ["vaih_area1", "vaih_area3", "vaih_area5", "vaih_area7", "vaih_area11", "vaih_area13", "vaih_area15", "vaih_area17", "vaih_area21", "vaih_area23", "vaih_area26", "vaih_area28", "vaih_area30", "vaih_area32", "vaih_area34", "vaih_area37"],
+    "image_filename_pattern": "{image_id}_RGB.tif",
+    "label_filename_pattern": "{image_id}_label.tif",
+    "label_policy": "Label files are bound by name and existence only. This candidate-generation phase never opens, decodes, hashes, or derives prompts from labels/GT.",
+    "image_level_support": "all five registered foreground classes are prompted for every registered area; no image-level support is derived from GT"
+  },
+  "proposal": {
+    "provider": "SAM3ImageBackend from a read-only first-paper source copy",
+    "checkpoint_sha256": "UNSET_REPLACE_WITH_VERIFIED_SHA256_BEFORE_RUN",
+    "device": "cuda",
+    "tile_size": 512,
+    "tile_overlap": 128,
+    "score_threshold": 0.55,
+    "mask_threshold": 0.5,
+    "min_mask_area": 32,
+    "max_mask_area_ratio": 0.95,
+    "conflict_margin": 0.03,
+    "rgb_band_indices": [0, 1, 2],
+    "candidate_cache_format": "sam3_remote_wsss.candidate_cache format_version=1 (.npz plus .json)",
+    "remoteclip_prompt_ranking": false
+  },
+  "prompting": {
+    "style": "remoteclip_b2c",
+    "include_manual_prompts": true,
+    "max_prompts_per_class": 4
+  },
+  "classes": [
+    {"id": 1, "name": "impervious_surface", "label_color": [255, 255, 255], "prompts": ["impervious surface", "paved road", "asphalt surface in aerial imagery", "overhead view of paved ground"]},
+    {"id": 2, "name": "building", "label_color": [0, 0, 255], "prompts": ["building", "buildings in satellite imagery", "rooftops in aerial imagery", "overhead view of buildings"]},
+    {"id": 3, "name": "low_vegetation", "label_color": [0, 255, 255], "prompts": ["low vegetation", "grass", "lawn in aerial imagery", "low plants in satellite imagery"]},
+    {"id": 4, "name": "tree", "label_color": [0, 255, 0], "prompts": ["tree", "trees in aerial imagery", "tree crown", "overhead view of trees"]},
+    {"id": 5, "name": "car", "label_color": [255, 255, 0], "prompts": ["car", "small cars in aerial imagery", "vehicles in satellite imagery", "overhead view of cars"]}
+  ],
+  "constraints": {
+    "ctpv1_modified": false,
+    "scc_modified": false,
+    "guard_modified": false,
+    "c2_modified": false,
+    "alpha_modified": false,
+    "prompt_modified": false,
+    "prototype_construction_modified": false,
+    "fusion_canvas_modified": false,
+    "support_subset_modified": false,
+    "training": false,
+    "adapter": false,
+    "prompt_tuning": false,
+    "dino": false,
+    "multi_prototype": false,
+    "overwrite": false
+  }
+}

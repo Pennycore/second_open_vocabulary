@@ -1,0 +1,23 @@
+# Portable execution contract. All paths are relative to this second-paper root.
+experiment:
+  name: vaihingen_sam3_candidate_v0
+  overwrite: false
+  run_prefix: run_
+
+paths:
+  protocol_file: configs/vaihingen_sam3_candidate_protocol_v0.json
+  image_dir: inputs/vaihingen/images
+  label_dir: inputs/vaihingen/labels
+  # Read-only copies of the first-paper source and official SAM3 repository.
+  sam3_python_root: inputs/sam3_remote_wsss/src
+  sam3_repo: inputs/sam3/sam3-main
+  sam3_checkpoint: inputs/checkpoints/sam3.pt
+  output_root: outputs/proposals/vaihingen_sam3_v0
+
+runtime:
+  device: cuda
+  required_gpu_substring: RTX 3090
+
+integrity:
+  # Deliberately unresolved until the uploaded SAM3 checkpoint is hashed on 3090.
+  sam3_checkpoint_sha256: UNSET_REPLACE_WITH_VERIFIED_SHA256_BEFORE_RUN

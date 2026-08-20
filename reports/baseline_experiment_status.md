@@ -4,7 +4,21 @@
 审计范围：本地第二篇工程 `C:\Users\28457\Desktop\open_vocabulary`，以及双 2080 Ti 上的只读工作区和第一篇工程中的既有资产。  
 本文件是后续 baseline 的前置门禁，不是新的实验结果。除明确标为 `COMPLETED` 的既有输出外，RemoteCLIP 的下列矩阵均为 `PREPARED / NOT RUN`。
 
-## 0. Potsdam RemoteCLIP partial-support attempt（2026-08-20，stopped）
+## 0. Vaihingen RemoteCLIP controlled baseline（2026-08-20，completed）
+
+3090v2 隔离工作区已完成冻结的 RemoteCLIP backbone-replacement baseline：
+`/home/zhongsz/second_open_vocabulary/outputs/baselines/remoteclip/vaihingen_v0/run_20260820T152937Z_1afc6939`。
+该 run 使用新生成且不可变的 SAM3 candidate cache
+`run_20260820T145952Z_5beba872`（aggregate SHA-256：
+`c06b9b8008566a1ff3ce748ab624154272c7cae32964451d4fb1d962d86b2da8`），不是重跑既有 CTP 主实验。
+
+仅将 OpenAI CLIP encoder 替换为 RemoteCLIP ViT-B/32；SAM3 candidates、prompts、support subset、visual prototype construction、alpha、C2/CTP-v1、FusionCanvas 与 evaluation protocol 全部冻结。未进行 training、adapter、prompt tuning、calibration，也未复用 OpenAI features/scores。SAM3 checkpoint SHA-256 为 `9999e2341ceef5e136daa386eecb55cb414446a00ac2b55eb2dfd2f7c3cf8c9e`，RemoteCLIP checkpoint SHA-256 为 `60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4`；runner 实现由 commit `7fbbaaa` 引入。
+
+Full-support：Text-only OA/Macro-F1/mIoU = 0.143945203/0.131737719/0.078768029；C2 normalized = 0.487243649/0.554823030/0.405053193；CTP-v1 = 0.498766426/0.567815872/0.414507073。partial-support k=2/3/4 的完整结果、artifact hashes 与解释边界见 `reports/remoteclip_vaihingen_baseline_20260820.md`。
+
+该结果是 controlled backbone baseline，本身不构成与 OpenAI CLIP 的数值比较；此类跨-backbone 结论必须另引完全匹配的 OpenAI Vaihingen evidence。SegEarth-OV 仍为 feasibility-only，LoveDA 未改动或重跑。
+
+## 1. Potsdam RemoteCLIP partial-support attempt（2026-08-20，stopped）
 
 为补充已完成 `run_20260820_002` 的 partial-support 指标，新增了仅使用既有 RemoteCLIP `predictions.npz`、`records.jsonl`、冻结的 CTP-v1 配置、Potsdam support-subset manifest 以及第一篇已落盘 candidate masks 的离线 evaluator。预检已通过：RemoteCLIP 预测缓存、records 行号与 candidate 顺序/元数据、候选目录 SHA-256、support-manifest SHA-256、RemoteCLIP protocol SHA-256 和 CTP-v1 frozen SHA-256 均成功绑定；预检完成后才允许读取 GT。此尝试没有加载模型、没有读取 OpenAI CLIP 特征、没有重跑 SAM3，也没有改变 prompt、alpha、prototype construction、FusionCanvas 或 CTP-v1。
 

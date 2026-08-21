@@ -4,9 +4,11 @@
 
 **NO-GO — no official inference or metric was produced.** The official code,
 fixed source assets, Vaihingen split geometry, checkpoints, and isolated CUDA
-environment were verified. Two prediction-only technical launches then failed
-before SegEarth model construction, weight loading into the model, semantic
-prediction creation, prediction-manifest sealing, or semantic-GT reading.
+environment were verified. Two prediction-only technical launches failed before
+SegEarth model construction. A final, explicitly authorized bootstrap launch
+passed the MMSeg registry/pipeline gate and reached model construction, but
+then failed while the adapter hashed a relative checkpoint path. No launch
+created a semantic prediction, prediction-manifest seal, or semantic-GT read.
 
 This is a reproducibility and protocol gate, not a result-based decision. The
 frozen CTP-v1 method, CTP data/evaluation protocol, RemoteCLIP runs, SAM3
@@ -37,8 +39,8 @@ the frozen CTP red clutter GT rule remains ignore for ground truth.
 | OpenAI CLIP ViT-B/16 | Official vendored OpenCLIP resolver uses the OpenAI public URL encoded in `open_clip/pretrained.py`; downloaded from that exact URL only after environment gate passed | `5806e77cd80f8b59890b7e101eabd078d9fb84e6937f9e85e4ecb61988df416f` | Present at `runtime_py39/clip_cache_home/.cache/clip/ViT-B-16.pt`; 335 MiB |
 
 The official source's OpenAI resolver validates the URL-embedded SHA prefix.
-All model assets are locally bound; the OpenAI file was not loaded into a model
-because both launches stopped first.
+All model assets are locally bound. No semantic model output was produced, and
+no prediction was sealed for GT evaluation.
 
 ## Vaihingen protocol and data gate
 
@@ -128,8 +130,8 @@ The compatibility/install records are retained under `runtime_py39/`:
 
 ## Prediction-launch record
 
-Two unique prediction-only directories/logs were retained. Neither yielded a
-prediction artifact, and no retry remains authorized.
+Three bounded launch records were retained. None yielded a prediction artifact,
+and no further retry remains authorized.
 
 1. The first launch failed before model construction because the adapter was
    invoked from `integration/`, leaving the official checkout absent from
@@ -143,11 +145,24 @@ prediction artifact, and no retry remains authorized.
    mmengine::transform registry`). Its log is
    `runtime_py39/vaihingen_official_prediction_relaunch_20260821.log`.
 
-The second non-model startup failure triggers the frozen stop condition. The
-adapter was not changed again; no official core source, algorithm, model
-setting, class mapping, or input protocol was modified. There is no
-prediction manifest, semantic map, whole-image metric, common-support metric,
-per-scene metric, or GT-derived result to report.
+3. Sol approved one final bootstrap-only repair: the adapter called the
+   official `mmseg.utils.register_all_modules(init_default_scope=True)` before
+   composing the pipeline. Its import/pipeline gate passed with
+   `LoadImageFromFile`, `Resize`, and `PackSegInputs`. The single fresh launch
+   under `outputs/external_baselines/segearth_ov/vaihingen_official_bootstrapfix/`
+   reached `MODELS.build(...).cuda().eval()`, but then failed before writing a
+   run manifest because the adapter hashed `clip_weight` as a relative path
+   after changing the working directory (`FileNotFoundError` for
+   `external_baselines/.../ViT-B-16.pt`). The preserved log is
+   `runtime_py39/vaihingen_official_bootstrapfix_20260821.log`; the unique run
+   directory contains no files.
+
+The third error is an adapter-bootstrap error, not an official model result.
+The explicitly authorized final launch is exhausted: the adapter was not
+changed again; no official core source, algorithm, model setting, class
+mapping, or input protocol was modified. There is no prediction manifest,
+semantic map, whole-image metric, common-support metric, per-scene metric, or
+GT-derived result to report.
 
 ## Potsdam gate
 
@@ -170,7 +185,7 @@ No Potsdam adaptation, inference, or metric computation was performed.
 SegEarth-OV must not be reported as a numerical external baseline from this
 round. The scientifically accurate statement is that an official fixed-commit,
 isolated-environment reproduction was prepared with bound checkpoints and
-frozen Vaihingen common support, but stopped before model construction and
-inference after two preserved adapter-bootstrap failures. The Vaihingen
+frozen Vaihingen common support, but stopped before inference after three
+preserved adapter-bootstrap failures. The Vaihingen
 data/common-support preparations and all associated hashes are retained for a
 future, explicitly approved compatibility study.

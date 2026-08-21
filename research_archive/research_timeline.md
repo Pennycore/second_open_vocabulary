@@ -18,6 +18,7 @@ Dates below come from Git history, frozen protocols, reports, and output manifes
 | 2026-08-21 | SegEarth-OV reproducibility and fairness audit concluded NO-GO for the current controlled comparison; no SegEarth environment or inference was started. | `reports/segearth_ov_feasibility_audit_20260821.md` |
 | 2026-08-21 | Artifact-complete RemoteCLIP Vaihingen controlled run preserved float32 scores, prediction-before-GT gating, complete partial-support per-area statistics/accounting, and area-cluster bootstrap assets. | run `run_20260821T070310Z_ab6e429b`; commit `3564ea7`; `reports/remoteclip_vaihingen_partial_support_complete_20260821.md` |
 | 2026-08-21 | SegEarth-OV external baseline gate was re-audited as NO-GO; no official deployment, asset download, or inference was initiated. | commit `48678ec`; `reports/segearth_ov_external_baseline_gate_reaudit_20260821.md` |
+| 2026-08-21 | A bounded fixed-commit SegEarth-OV Vaihingen reproduction attempt established an isolated Python 3.9 CUDA environment, bound SimFeatUp/OpenAI weights, and froze 325-tile/Omega inputs. Two prediction-only adapter bootstrap failures occurred before model construction, prediction output, or semantic GT access; the stop condition was applied. | `reports/segearth_ov_official_repro_audit.md`; server logs and manifests cited therein |
 
 ## Interpretation boundary
 

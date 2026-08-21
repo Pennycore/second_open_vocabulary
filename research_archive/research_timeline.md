@@ -14,6 +14,8 @@ Dates below come from Git history, frozen protocols, reports, and output manifes
 | 2026-08-20 | Controlled RemoteCLIP backbone-replacement baseline completed on Potsdam full support; partial-support evaluation was intentionally not completed. | commits `cef2c49`, `9cb17c2`; remote workspace HEAD `7aecc73`; RemoteCLIP run manifest and report |
 | 2026-08-20 | Controlled RemoteCLIP backbone-replacement baseline completed on Vaihingen with full support and frozen partial-support subsets k=2/3/4. | runner commit `7fbbaaa`; run `run_20260820T152937Z_1afc6939`; candidate run `run_20260820T145952Z_5beba872`; `reports/remoteclip_vaihingen_baseline_20260820.md` |
 | 2026-08-20 | This local traceability index and dated machine snapshots were created. | `research_archive/` and dated artifacts |
+| 2026-08-21 | RemoteCLIP Vaihingen sealed-output, partial-support aggregate, and five-area bootstrap audit were completed without new inference. | source run `run_20260820T152937Z_1afc6939`; cache-only audit `run_20260821T044500Z_35155e8`; code commit `35155e8`; `reports/remoteclip_vaihingen_partial_support_20260821.md` |
+| 2026-08-21 | SegEarth-OV reproducibility and fairness audit concluded NO-GO for the current controlled comparison; no SegEarth environment or inference was started. | `reports/segearth_ov_feasibility_audit_20260821.md` |
 
 ## Interpretation boundary
 

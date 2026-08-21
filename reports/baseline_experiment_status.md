@@ -124,3 +124,32 @@ Potsdam 的 RemoteCLIP full-support baseline 已完成，受控输出位于远�
 这不改变已冻结的协议：没有重跑 SAM3、训练或调整 prompt、alpha、prototype construction、FusionCanvas 或 CTP-v1。该 run 不读取或复用 OpenAI CLIP features/scores；OpenAI CLIP 仅作为 `report.md` 中明确标记的受控、不同-backbone 对照。
 
 Vaihingen RemoteCLIP 仍为 **PREPARED / NOT RUN**，不得将 Potsdam 结果外推为 Vaihingen 结果。SegEarth-OV 仍仅完成 feasibility audit，尚未作为可直接混合报告的外部 baseline。首次 `run_20260820_001` 在模型加载前因执行层摘要门禁格式不一致而停止，目录为空，不构成实验结果，也不得纳入任何表格或结论。
+
+## 7. Final strong-baseline update (2026-08-21)
+
+This update supersedes the two stale Vaihingen status sentences above. The
+controlled RemoteCLIP Vaihingen run is **COMPLETED** at
+`/home/zhongsz/second_open_vocabulary/outputs/baselines/remoteclip/vaihingen_v0/run_20260820T152937Z_1afc6939`.
+It uses the frozen SAM3 candidate aggregate
+`c06b9b8008566a1ff3ce748ab624154272c7cae32964451d4fb1d962d86b2da8` and
+RemoteCLIP checkpoint
+`60014e395d930a3f2963d1d89c8522bf4ad56775571e4356e866864789af85c4`.
+
+The cache-only post-processing audit completed separately at
+`.../remoteclip/vaihingen_partial_cache_audit/run_20260821T044500Z_35155e8`
+with code commit `35155e8b78cde1928bbe0ca5d7f80cc7d586eeba`. It reuses the
+sealed source results; it did not rerun SAM3 or RemoteCLIP inference. The
+full-support CTP-minus-C2 five-area bootstrap (seed 42, 5,000 resamples) is
+OA +0.0115228 [0.0069954, 0.0162585], Macro-F1 +0.0129928
+[0.0084988, 0.0157350], and mIoU +0.0094539 [0.0033819, 0.0119766].
+Partial-support aggregate evidence for k=2/3/4 is completed; its source cannot
+support per-area partial bootstrap or pixel accounting. See
+`reports/remoteclip_vaihingen_partial_support_20260821.md`.
+
+SegEarth-OV is **NO-GO / not run** in this phase. The official method is a
+protocol-different external dense OVSS pipeline and does not meet the frozen
+controlled-comparison or partial-support conditions. See
+`reports/segearth_ov_feasibility_audit_20260821.md`.
+
+No CTP-v1, SCC, Guard, C2, prompt, prototype, `alpha`, FusionCanvas, support
+subset, SAM3, first-paper file, or existing output run was modified.

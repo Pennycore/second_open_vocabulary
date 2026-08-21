@@ -22,6 +22,26 @@ def test_frozen_all_bitmask_registration_has_expected_counts():
     assert tuple(subsets) == tuple(f"subset_{i}" for i in range(32) if bin(i).count("1") in (2, 3, 4))
 
 
+def test_source_subset_validation_accepts_json_lexical_key_order(tmp_path: Path):
+    subsets = MODULE._expected_subsets()
+    source = {
+        key: {"k": value["k"], "supported": value["supported"], "unsupported": value["unsupported"], "methods": {method: {} for method in MODULE.RUN_METHODS}}
+        for key, value in sorted(subsets.items())
+    }
+    rows = [
+        {"subset_index": value["subset_index"], "method": method}
+        for _, value in sorted(subsets.items())
+        for method in MODULE.RUN_METHODS
+    ]
+    path = tmp_path / "partial.csv"
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        import csv
+        writer = csv.DictWriter(handle, fieldnames=["subset_index", "method"])
+        writer.writeheader()
+        writer.writerows(rows)
+    MODULE._validate_source_partial(source, path)
+
+
 def test_pixel_accounting_distinguishes_conflicts_from_uncovered():
     pred = np.array([[0, 255], [255, 1]], dtype=np.uint8)
     gt = np.array([[0, 1], [2, 255]], dtype=np.uint8)

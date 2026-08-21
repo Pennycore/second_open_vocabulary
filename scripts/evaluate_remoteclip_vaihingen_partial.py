@@ -185,7 +185,10 @@ def _load_run(run_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]], dict
 
 def _validate_source_partial(partial: dict[str, Any], csv_path: Path) -> None:
     expected = _expected_subsets()
-    if tuple(partial) != tuple(expected):
+    # The source JSON is deliberately written with ``sort_keys=True``; therefore
+    # its lexical key order (subset_10 before subset_3) is not protocol order.
+    # Membership, not serialized ordering, is the frozen registration invariant.
+    if set(partial) != set(expected):
         raise InputValidationError("Source partial JSON subset keys differ from registered all-bitmask protocol.")
     rows = list(csv.DictReader(csv_path.open("r", encoding="utf-8", newline="")))
     if len(rows) != len(expected) * len(RUN_METHODS):

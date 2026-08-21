@@ -64,3 +64,16 @@ def test_bootstrap_is_deterministic_and_uses_area_clusters():
     assert first == second
     assert first["cluster_unit"] == "Vaihingen test area"
     assert set(first["direction_by_area"]) == {str(area) for area in MODULE.TEST_AREAS}
+
+
+def test_score_sets_preserve_saved_text_top1_from_compressed_cache():
+    cache = {
+        "text_scores": np.array([[0.1, 0.10001, 0.0, 0.0, 0.0]], dtype=np.float32),
+        "visual_scores": np.zeros((1, 5), dtype=np.float32),
+        "text_prototypes": np.eye(5, dtype=np.float32),
+        "visual_prototypes": np.eye(5, dtype=np.float32),
+        "text_pred": np.array([0], dtype=np.int64),
+    }
+    subsets = MODULE._expected_subsets()
+    _, predictions = MODULE._score_sets(cache, subsets)
+    assert all(values["text_only"].tolist() == [0] for values in predictions.values())

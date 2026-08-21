@@ -277,6 +277,11 @@ def _score_sets(cache: dict[str, np.ndarray], subsets: OrderedDict[str, dict[str
         support = np.asarray([name in subset["supported"] for name in CLASSES], dtype=bool)
         score = method_score_matrices(cache["text_scores"], cache["visual_scores"], anchored, support, cache["text_pred"])
         prediction = method_predictions(score, cache["text_pred"], support)
+        # The completed run persisted the float32-era text top-1 separately
+        # because its score cache is intentionally float16 compressed.  Never
+        # recompute a potentially tie-sensitive Text-only decision from that
+        # compressed score matrix.
+        prediction["text_only"] = cache["text_pred"].copy()
         score_sets[key] = {method: score[method] for method in RUN_METHODS}
         prediction_sets[key] = {method: prediction[method] for method in RUN_METHODS}
     return score_sets, prediction_sets

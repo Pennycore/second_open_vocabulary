@@ -4,6 +4,27 @@
 审计范围：本地第二篇工程 `C:\Users\28457\Desktop\open_vocabulary`，以及双 2080 Ti 上的只读工作区和第一篇工程中的既有资产。  
 本文件是后续 baseline 的前置门禁，不是新的实验结果。除明确标为 `COMPLETED` 的既有输出外，RemoteCLIP 的下列矩阵均为 `PREPARED / NOT RUN`。
 
+## 2026-08-21 final strong-baseline update (authoritative addendum)
+
+The RemoteCLIP Vaihingen artifact-complete controlled run
+`run_20260821T070310Z_ab6e429b` is completed with scientific evidence enabled.
+It preserves 27 float32 score archives, 390 semantic maps, 390 confusion
+matrices, 390 per-area metric rows, 390 pixel-accounting rows, 78 registered
+subset metrics, and 25 seed-42/repeats-5000 area-bootstrap records. Prediction
+sealing precedes GT access. See
+`reports/remoteclip_vaihingen_partial_support_complete_20260821.md` and
+`reports/remoteclip_backbone_robustness_final_20260821.md`.
+
+SegEarth-OV is an external whole-method baseline only and remains **NO-GO**
+in this round. It has no isolated official runtime, locally SHA-bound
+SimFeatUp/OpenAI CLIP assets, frozen five-class/ignore plus common-support
+manifest, or Potsdam input/GT binding. See
+`reports/segearth_ov_external_baseline_gate_reaudit_20260821.md`.
+
+This addendum supersedes stale historical status text below. CTP-v1, SCC,
+Guard, C2, prompts, alpha, prototypes, FusionCanvas, SAM3, first-paper files,
+and prior outputs remain unchanged.
+
 ## 0. Vaihingen RemoteCLIP controlled baseline（2026-08-20，completed）
 
 3090v2 隔离工作区已完成冻结的 RemoteCLIP backbone-replacement baseline：

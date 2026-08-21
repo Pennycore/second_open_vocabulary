@@ -16,6 +16,8 @@ Dates below come from Git history, frozen protocols, reports, and output manifes
 | 2026-08-20 | This local traceability index and dated machine snapshots were created. | `research_archive/` and dated artifacts |
 | 2026-08-21 | RemoteCLIP Vaihingen sealed-output, partial-support aggregate, and five-area bootstrap audit were completed without new inference. | source run `run_20260820T152937Z_1afc6939`; cache-only audit `run_20260821T044500Z_35155e8`; code commit `35155e8`; `reports/remoteclip_vaihingen_partial_support_20260821.md` |
 | 2026-08-21 | SegEarth-OV reproducibility and fairness audit concluded NO-GO for the current controlled comparison; no SegEarth environment or inference was started. | `reports/segearth_ov_feasibility_audit_20260821.md` |
+| 2026-08-21 | Artifact-complete RemoteCLIP Vaihingen controlled run preserved float32 scores, prediction-before-GT gating, complete partial-support per-area statistics/accounting, and area-cluster bootstrap assets. | run `run_20260821T070310Z_ab6e429b`; commit `3564ea7`; `reports/remoteclip_vaihingen_partial_support_complete_20260821.md` |
+| 2026-08-21 | SegEarth-OV external baseline gate was re-audited as NO-GO; no official deployment, asset download, or inference was initiated. | commit `48678ec`; `reports/segearth_ov_external_baseline_gate_reaudit_20260821.md` |
 
 ## Interpretation boundary
 

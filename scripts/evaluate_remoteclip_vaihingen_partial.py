@@ -340,7 +340,10 @@ def _bootstrap(area_matrices: dict[int, dict[str, np.ndarray]], subset: dict[str
         metrics,
     )
     rng = np.random.default_rng(seed)
-    values = {name: np.empty(repeats, dtype=np.float64) for name in BOOTSTRAP_COLUMNS}
+    # Only allocate metrics that are scientifically defined for this evidence
+    # source.  Full support has no unsupported partition, so U/H fields must
+    # never appear in its bootstrap JSON.
+    values = {name: np.empty(repeats, dtype=np.float64) for name in metrics}
     for repeat in range(repeats):
         drawn = rng.choice(areas, size=len(areas), replace=True)
         ctp = _subset_metrics(np.sum([area_matrices[int(area)]["CTP"] for area in drawn], axis=0), subset)

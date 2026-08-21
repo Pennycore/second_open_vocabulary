@@ -66,6 +66,16 @@ def test_bootstrap_is_deterministic_and_uses_area_clusters():
     assert set(first["direction_by_area"]) == {str(area) for area in MODULE.TEST_AREAS}
 
 
+def test_full_support_bootstrap_omits_undefined_unsupported_metrics():
+    base = np.eye(5, dtype=np.int64)
+    areas = {area: {"C2": base.copy(), "CTP": base.copy()} for area in MODULE.TEST_AREAS}
+    full = {"supported": list(MODULE.CLASSES), "unsupported": []}
+    result = MODULE._bootstrap(areas, full, seed=42, repeats=3, metrics=("OA", "macro_f1", "mIoU"))
+    assert set(result["point_estimate"]) == {"OA", "macro_f1", "mIoU"}
+    assert set(result["bootstrap"]) == {"OA", "macro_f1", "mIoU"}
+    assert all(set(values) == {"OA", "macro_f1", "mIoU"} for values in result["direction_by_area"].values())
+
+
 def test_score_sets_preserve_saved_text_top1_from_compressed_cache():
     cache = {
         "text_scores": np.array([[0.1, 0.10001, 0.0, 0.0, 0.0]], dtype=np.float32),

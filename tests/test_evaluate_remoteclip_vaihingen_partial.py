@@ -25,18 +25,18 @@ def test_frozen_all_bitmask_registration_has_expected_counts():
 def test_source_subset_validation_accepts_json_lexical_key_order(tmp_path: Path):
     subsets = MODULE._expected_subsets()
     source = {
-        key: {"k": value["k"], "supported": value["supported"], "unsupported": value["unsupported"], "methods": {method: {} for method in MODULE.RUN_METHODS}}
+        key: {"k": value["k"], "supported": value["supported"], "unsupported": value["unsupported"], "methods": {method: {metric: 0.0 for metric in MODULE.METRIC_COLUMNS} | {"valid_pixels": 0} for method in MODULE.RUN_METHODS}}
         for key, value in sorted(subsets.items())
     }
     rows = [
-        {"subset_index": value["subset_index"], "method": method}
+        {"subset_index": value["subset_index"], "method": method, **{metric: 0.0 for metric in MODULE.METRIC_COLUMNS}, "valid_pixels": 0}
         for _, value in sorted(subsets.items())
         for method in MODULE.RUN_METHODS
     ]
     path = tmp_path / "partial.csv"
     with path.open("w", encoding="utf-8", newline="") as handle:
         import csv
-        writer = csv.DictWriter(handle, fieldnames=["subset_index", "method"])
+        writer = csv.DictWriter(handle, fieldnames=["subset_index", "method", *MODULE.METRIC_COLUMNS, "valid_pixels"])
         writer.writeheader()
         writer.writerows(rows)
     MODULE._validate_source_partial(source, path)
@@ -59,8 +59,8 @@ def test_bootstrap_is_deterministic_and_uses_area_clusters():
         ctp = base.copy()
         ctp[0, 0] += area
         areas[area] = {"C2": c2, "CTP": ctp}
-    first = MODULE._bootstrap(areas, subset, seed=42, repeats=20)
-    second = MODULE._bootstrap(areas, subset, seed=42, repeats=20)
+    first = MODULE._bootstrap(areas, subset, seed=42, repeats=20, metrics=("OA", "macro_f1", "mIoU", "U_IoU", "H_IoU"))
+    second = MODULE._bootstrap(areas, subset, seed=42, repeats=20, metrics=("OA", "macro_f1", "mIoU", "U_IoU", "H_IoU"))
     assert first == second
     assert first["cluster_unit"] == "Vaihingen test area"
     assert set(first["direction_by_area"]) == {str(area) for area in MODULE.TEST_AREAS}

@@ -206,6 +206,10 @@ def _validate_source_partial(partial: dict[str, Any], csv_path: Path) -> None:
         if key not in expected or method not in RUN_METHODS or (key, method) in seen:
             raise InputValidationError("Source partial CSV has invalid, duplicate, or unregistered rows.")
         seen.add((key, method))
+        json_values = partial[key]["methods"][method]
+        for metric in METRIC_COLUMNS + ("valid_pixels",):
+            if metric not in row or metric not in json_values or not np.isclose(float(row[metric]), float(json_values[metric]), rtol=0.0, atol=0.0):
+                raise InputValidationError(f"Source partial CSV/JSON metric differs: {key}/{method}/{metric}.")
     if len(seen) != len(expected) * len(RUN_METHODS):
         raise InputValidationError("Source partial CSV omits a registered subset/method row.")
 
@@ -287,31 +291,28 @@ def _score_sets(cache: dict[str, np.ndarray], subsets: OrderedDict[str, dict[str
     return score_sets, prediction_sets
 
 
-def _validate_full_maps(run_dir: Path, records: list[dict[str, Any]], bound: OrderedDict[str, tuple[tuple[int, int], list[dict[str, Any]], np.ndarray]], cache: dict[str, np.ndarray], manifest: dict[str, Any]) -> None:
-    """Prove f16 cache reconstruction retains every saved full-support map before GT."""
-    all_supported = OrderedDict({"full": {"supported": list(CLASSES)}})
-    score_sets, prediction_sets = _score_sets(cache, all_supported)
-    position = 0
-    grouped_positions: dict[str, np.ndarray] = {}
-    for image_id in bound:
-        length = sum(1 for record in records if record["image_id"] == image_id)
-        grouped_positions[image_id] = np.arange(position, position + length, dtype=np.int64)
-        position += length
-    if position != len(records):
-        raise InputValidationError("Record/image grouping does not cover frozen cache rows.")
+def _validate_full_maps(run_dir: Path, bound: OrderedDict[str, tuple[tuple[int, int], list[dict[str, Any]], np.ndarray]], manifest: dict[str, Any]) -> None:
+    """Validate the original, sealed full-support maps before GT is opened.
+
+    The feature scores were compressed to float16 after the original run, while
+    FusionCanvas was applied to float32 scores.  Thus the sealed maps, not a
+    lossy score-cache reconstruction, are the canonical prediction artifacts.
+    """
     artifacts = manifest.get("artifacts", {})
+    expected_names = {f"{method}_{image_id}_semantic.npz" for image_id in bound for method in RUN_METHODS}
+    if set(artifacts) != expected_names:
+        raise InputValidationError("Source manifest semantic-map file list differs from frozen Text/C2/CTP test maps.")
     for image_id, (shape, regions, _) in bound.items():
-        rows = grouped_positions[image_id]
         for method in RUN_METHODS:
-            prediction = prediction_sets["full"][method][rows]
-            scores = score_sets["full"][method][rows, prediction]
-            rebuilt, _ = assemble_semantic_map(shape, regions, prediction, scores, CLASSES)
             target = run_dir / f"{method}_{image_id}_semantic.npz"
             if not target.is_file() or sha256_file(target) != artifacts.get(target.name):
                 raise InputValidationError(f"Source semantic-map hash differs from manifest: {target.name}")
             with np.load(target, allow_pickle=False) as archive:
-                if set(archive.files) != {"label_map"} or not np.array_equal(rebuilt, archive["label_map"]):
-                    raise InputValidationError(f"Frozen cache cannot reproduce source semantic map: {target.name}")
+                if set(archive.files) != {"label_map"}:
+                    raise InputValidationError(f"Source semantic-map schema differs: {target.name}")
+                label_map = archive["label_map"]
+                if tuple(label_map.shape) != shape or not np.isin(label_map, [*range(len(CLASSES)), IGNORE_INDEX]).all():
+                    raise InputValidationError(f"Source semantic-map geometry/labels differ: {target.name}")
 
 
 def _gt_from_label(path: Path) -> np.ndarray:
@@ -325,17 +326,18 @@ def _gt_from_label(path: Path) -> np.ndarray:
     return gt
 
 
-def _metric_delta(ctp: dict[str, Any], c2: dict[str, Any]) -> dict[str, float]:
-    return {name: float(ctp[name] - c2[name]) for name in BOOTSTRAP_COLUMNS}
+def _metric_delta(ctp: dict[str, Any], c2: dict[str, Any], metrics: tuple[str, ...]) -> dict[str, float]:
+    return {name: float(ctp[name] - c2[name]) for name in metrics}
 
 
-def _bootstrap(area_matrices: dict[int, dict[str, np.ndarray]], subset: dict[str, Any], seed: int, repeats: int) -> dict[str, Any]:
+def _bootstrap(area_matrices: dict[int, dict[str, np.ndarray]], subset: dict[str, Any], seed: int, repeats: int, metrics: tuple[str, ...]) -> dict[str, Any]:
     areas = list(TEST_AREAS)
     if sorted(area_matrices) != areas:
         raise InputValidationError("Bootstrap cluster areas differ from frozen Vaihingen test areas.")
     point = _metric_delta(
         _subset_metrics(np.sum([area_matrices[area]["CTP"] for area in areas], axis=0), subset),
         _subset_metrics(np.sum([area_matrices[area]["C2"] for area in areas], axis=0), subset),
+        metrics,
     )
     rng = np.random.default_rng(seed)
     values = {name: np.empty(repeats, dtype=np.float64) for name in BOOTSTRAP_COLUMNS}
@@ -343,10 +345,10 @@ def _bootstrap(area_matrices: dict[int, dict[str, np.ndarray]], subset: dict[str
         drawn = rng.choice(areas, size=len(areas), replace=True)
         ctp = _subset_metrics(np.sum([area_matrices[int(area)]["CTP"] for area in drawn], axis=0), subset)
         c2 = _subset_metrics(np.sum([area_matrices[int(area)]["C2"] for area in drawn], axis=0), subset)
-        delta = _metric_delta(ctp, c2)
+        delta = _metric_delta(ctp, c2, metrics)
         for name, value in delta.items():
             values[name][repeat] = value
-    directions = {str(area): _metric_delta(_subset_metrics(area_matrices[area]["CTP"], subset), _subset_metrics(area_matrices[area]["C2"], subset)) for area in areas}
+    directions = {str(area): _metric_delta(_subset_metrics(area_matrices[area]["CTP"], subset), _subset_metrics(area_matrices[area]["C2"], subset), metrics) for area in areas}
     return {
         "cluster_unit": "Vaihingen test area",
         "areas": areas,
@@ -385,7 +387,7 @@ def _render_report(output: Path, source_run: Path, bindings: dict[str, Any], ful
     lines = [
         "# RemoteCLIP Vaihingen partial-support cache audit",
         "",
-        "This is a cache-only reconstruction from the completed RemoteCLIP run. No RemoteCLIP model, feature extraction, SAM3 execution, prompt, alpha, threshold, prototype, CTP-v1 formula, candidate cache, or support subset was changed. The source run was never written.",
+        "This is a sealed-artifact audit of the completed RemoteCLIP run. No RemoteCLIP model, feature extraction, SAM3 execution, prompt, alpha, threshold, prototype, CTP-v1 formula, candidate cache, or support subset was changed. The source run was never written.",
         "",
         "## Source binding",
         "",
@@ -393,7 +395,8 @@ def _render_report(output: Path, source_run: Path, bindings: dict[str, Any], ful
         f"- Candidate cache SHA-256: `{bindings['candidate_sha256']}` ({bindings['candidate_count']} files)",
         f"- CTP-v1 SHA-256: `{bindings['ctp_v1_frozen_sha256']}`",
         f"- RemoteCLIP protocol SHA-256: `{bindings['remoteclip_protocol_sha256']}`",
-        "- Cache reconstruction was required to match all 15 saved full-support semantic maps before GT was opened.",
+        "- All 15 sealed full-support semantic maps were verified directly against their source-run manifest hashes before GT was opened.",
+        "- The float16 score cache was not used to reconstruct FusionCanvas maps: the original run used float32 scores, so the sealed maps are the canonical predictions.",
         "",
         "## Full-support source metrics",
         "",
@@ -406,7 +409,7 @@ def _render_report(output: Path, source_run: Path, bindings: dict[str, Any], ful
     lines.extend(["", "## Partial-support k-level mean ± population std", "", "| k | Method | OA | Macro F1 | mIoU | S-IoU | U-IoU | H-IoU |", "|---:|---|---:|---:|---:|---:|---:|---:|"])
     for row in summaries:
         lines.append(f"| {row['k']} | {row['method']} | {row['OA_mean']:.6f} ± {row['OA_std']:.6f} | {row['macro_f1_mean']:.6f} ± {row['macro_f1_std']:.6f} | {row['mIoU_mean']:.6f} ± {row['mIoU_std']:.6f} | {row['S_IoU_mean']:.6f} ± {row['S_IoU_std']:.6f} | {row['U_IoU_mean']:.6f} ± {row['U_IoU_std']:.6f} | {row['H_IoU_mean']:.6f} ± {row['H_IoU_std']:.6f} |")
-    lines.extend(["", "## CTP − C2 area-cluster bootstrap", "", "All 25 registered support subsets were evaluated with test area as the cluster, seed 42, and 5,000 resamples. Per-subset point estimates, CIs, and per-area directions are in `bootstrap.json`; the complete rows and pixel accounting are in the CSV files.", ""])
+    lines.extend(["", "## CTP − C2 area-cluster bootstrap", "", "The sealed full-support maps permit a strict five-test-area bootstrap (seed 42; 5,000 resamples) for ΔOA, ΔMacro-F1, and ΔmIoU. The source run did not retain partial-support semantic maps or per-area partial confusion matrices, so partial ΔU-IoU/ΔH-IoU bootstrap and per-subset conflict/coverage accounting are explicitly unavailable rather than approximated from float16 scores.", ""])
     output.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
@@ -416,9 +419,8 @@ def _run(args: argparse.Namespace) -> Path:
     manifest, records, cache, full_metrics, source_partial = _load_run(args.run_dir)
     bindings = _validate_static_bindings(manifest, args.candidates_dir, args.ctp_config, args.remoteclip_protocol)
     bound = _load_bound_candidates(records, args.candidates_dir, args.sam3_python_root)
-    _validate_full_maps(args.run_dir, records, bound, cache, manifest)
+    _validate_full_maps(args.run_dir, bound, manifest)
     subsets = _expected_subsets()
-    score_sets, prediction_sets = _score_sets(cache, subsets)
     args.output_dir.mkdir(parents=True, exist_ok=False)
     pre_gt = {
         "format_version": 1,
@@ -439,6 +441,8 @@ def _run(args: argparse.Namespace) -> Path:
         "methods": list(RUN_METHODS),
         "semantic_maps_saved": False,
         "model_or_feature_inference": False,
+        "canonical_prediction_source": "sealed_source_semantic_maps",
+        "float16_score_cache_used_to_reconstruct_maps": False,
         "evaluator_sha256": sha256_file(Path(__file__)),
         "code_commit": _git_commit(),
     }
@@ -448,51 +452,42 @@ def _run(args: argparse.Namespace) -> Path:
         labels = manifest.get("labels", {})
         if label_hash != labels.get("sha256") or label_count != labels.get("count"):
             raise InputValidationError("Label directory hash/count differs from completed source run; GT remains unread.")
-        matrices = {key: {method: {area: np.zeros((len(CLASSES), len(CLASSES)), dtype=np.int64) for area in TEST_AREAS} for method in RUN_METHODS} for key in subsets}
-        pixel_rows: list[dict[str, Any]] = []
-        offset = 0
+        full_matrices = {method: {area: np.zeros((len(CLASSES), len(CLASSES)), dtype=np.int64) for area in TEST_AREAS} for method in RUN_METHODS}
+        full_rows: list[dict[str, Any]] = []
         for image_id, (shape, regions, covered) in bound.items():
             area = int(image_id.removeprefix("vaih_area"))
-            length = len(regions)
-            rows = np.arange(offset, offset + length, dtype=np.int64)
-            offset += length
             gt = _gt_from_label(args.labels_dir / f"{image_id}_label.tif")
             if tuple(gt.shape) != tuple(shape):
                 raise InputValidationError(f"GT/candidate image shape differs for {image_id}.")
-            for key, subset in subsets.items():
-                for method in RUN_METHODS:
-                    prediction = prediction_sets[key][method][rows]
-                    scores = score_sets[key][method][rows, prediction]
-                    semantic, _ = assemble_semantic_map(shape, regions, prediction, scores, CLASSES)
-                    matrix = np.asarray(pixel_confusion_fast(semantic, gt, CLASSES)["confusion_matrix"], dtype=np.int64)
-                    matrices[key][method][area] = matrix
-                    accounting = _pixel_accounting(semantic, gt, covered)
-                    metrics = _subset_metrics(matrix, subset)
-                    pixel_rows.append({"subset": key, "subset_index": subset["subset_index"], "k": subset["k"], "supported": "|".join(subset["supported"]), "unsupported": "|".join(subset["unsupported"]), "area": area, "method": method, **{name: metrics[name] for name in METRIC_COLUMNS}, **accounting})
-        if offset != len(records):
-            raise InputValidationError("Candidate groups do not cover all frozen cache records.")
-        results: dict[str, dict[str, dict[str, Any]]] = {}
-        subset_rows: list[dict[str, Any]] = []
-        bootstraps: dict[str, Any] = {}
-        for key, subset in subsets.items():
-            results[key] = {}
             for method in RUN_METHODS:
-                total = np.sum([matrices[key][method][area] for area in TEST_AREAS], axis=0)
-                values = _subset_metrics(total, subset)
-                results[key][method] = values
-                accounting = {name: int(sum(row[name] for row in pixel_rows if row["subset"] == key and row["method"] == method)) for name in ("assigned_pixels", "conflict_ignore_pixels", "uncovered_pixels", "gt_ignore_pixels", "total_pixels")}
-                subset_rows.append({"subset": key, "subset_index": subset["subset_index"], "k": subset["k"], "supported": "|".join(subset["supported"]), "unsupported": "|".join(subset["unsupported"]), "method": method, **{name: values[name] for name in METRIC_COLUMNS}, **accounting})
-            bootstraps[key] = _bootstrap({area: {method: matrices[key][method][area] for method in RUN_METHODS} for area in TEST_AREAS}, subset, args.bootstrap_seed, args.bootstrap_repeats)
-        _source_partial_check(results, source_partial)
+                with np.load(args.run_dir / f"{method}_{image_id}_semantic.npz", allow_pickle=False) as archive:
+                    semantic = archive["label_map"]
+                matrix = np.asarray(pixel_confusion_fast(semantic, gt, CLASSES)["confusion_matrix"], dtype=np.int64)
+                full_matrices[method][area] = matrix
+                metrics = _aggregate(matrix)
+                full_rows.append({"area": area, "image_id": image_id, "method": method, **{name: metrics[name] for name in ("OA", "macro_f1", "mIoU")}, **_pixel_accounting(semantic, gt, covered)})
+        for method in RUN_METHODS:
+            reconstructed = _aggregate(np.sum([full_matrices[method][area] for area in TEST_AREAS], axis=0))
+            for metric in ("OA", "macro_f1", "mIoU", "valid_pixels"):
+                if not np.isclose(float(reconstructed[metric]), float(full_metrics[method][metric]), rtol=0.0, atol=0.0):
+                    raise InputValidationError(f"Sealed semantic-map metric differs from source full metric: {method}/{metric}.")
+        results: dict[str, dict[str, dict[str, Any]]] = {key: source_partial[key]["methods"] for key in subsets}
+        subset_rows: list[dict[str, Any]] = []
+        for key, subset in subsets.items():
+            for method in RUN_METHODS:
+                values = results[key][method]
+                subset_rows.append({"subset": key, "subset_index": subset["subset_index"], "k": subset["k"], "supported": "|".join(subset["supported"]), "unsupported": "|".join(subset["unsupported"]), "method": method, **{name: values[name] for name in METRIC_COLUMNS}, "valid_pixels": values["valid_pixels"], "assigned_pixels": "unavailable_no_partial_semantic_maps", "conflict_ignore_pixels": "unavailable_no_partial_semantic_maps", "uncovered_pixels": "unavailable_no_partial_semantic_maps"})
+        full_subset = {"supported": list(CLASSES), "unsupported": []}
+        bootstrap = _bootstrap({area: {method: full_matrices[method][area] for method in RUN_METHODS} for area in TEST_AREAS}, full_subset, args.bootstrap_seed, args.bootstrap_repeats, ("OA", "macro_f1", "mIoU"))
         summaries = _summary_rows(results, subsets)
         _write_csv_exclusive(args.output_dir / "partial_metrics_per_subset.csv", list(subset_rows[0]), subset_rows)
-        _write_csv_exclusive(args.output_dir / "partial_metrics_by_area.csv", list(pixel_rows[0]), pixel_rows)
+        _write_csv_exclusive(args.output_dir / "full_support_by_area.csv", list(full_rows[0]), full_rows)
         _write_csv_exclusive(args.output_dir / "partial_summary_by_k.csv", list(summaries[0]), summaries)
-        _write_json_exclusive(args.output_dir / "bootstrap.json", {"format_version": 1, "comparison": "CTP_minus_C2", "seed": args.bootstrap_seed, "repeats": args.bootstrap_repeats, "cluster_unit": "Vaihingen test area", "subsets": bootstraps})
-        _write_json_exclusive(args.output_dir / "metrics.json", {"full_support_source": full_metrics, "partial_support": results, "subsets": subsets})
-        _render_report(args.output_dir / "report.md", args.run_dir, bindings, full_metrics, summaries, bootstraps)
+        _write_json_exclusive(args.output_dir / "bootstrap.json", {"format_version": 1, "comparison": "CTP_minus_C2", "full_support": bootstrap, "partial_support": {"status": "unavailable", "reason": "source run did not retain partial semantic maps or per-area partial confusion matrices; no float16 score reconstruction was performed"}})
+        _write_json_exclusive(args.output_dir / "metrics.json", {"full_support_source": full_metrics, "partial_support": results, "subsets": subsets, "limitations": {"partial_pixel_accounting": "unavailable_no_partial_semantic_maps", "partial_area_bootstrap": "unavailable_no_partial_semantic_maps"}})
+        _render_report(args.output_dir / "report.md", args.run_dir, bindings, full_metrics, summaries, bootstrap)
         final = dict(pre_gt)
-        final.update({"status": "completed", "gt_read": True, "labels": {"sha256": label_hash, "count": label_count}, "metrics_sha256": sha256_file(args.output_dir / "metrics.json"), "bootstrap_sha256": sha256_file(args.output_dir / "bootstrap.json"), "partial_metrics_per_subset_sha256": sha256_file(args.output_dir / "partial_metrics_per_subset.csv"), "partial_metrics_by_area_sha256": sha256_file(args.output_dir / "partial_metrics_by_area.csv"), "partial_summary_by_k_sha256": sha256_file(args.output_dir / "partial_summary_by_k.csv"), "report_sha256": sha256_file(args.output_dir / "report.md")})
+        final.update({"status": "completed", "gt_read": True, "labels": {"sha256": label_hash, "count": label_count}, "metrics_sha256": sha256_file(args.output_dir / "metrics.json"), "bootstrap_sha256": sha256_file(args.output_dir / "bootstrap.json"), "partial_metrics_per_subset_sha256": sha256_file(args.output_dir / "partial_metrics_per_subset.csv"), "full_support_by_area_sha256": sha256_file(args.output_dir / "full_support_by_area.csv"), "partial_summary_by_k_sha256": sha256_file(args.output_dir / "partial_summary_by_k.csv"), "report_sha256": sha256_file(args.output_dir / "report.md")})
         (args.output_dir / "manifest.json").write_text(json.dumps(final, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
         return args.output_dir
     except Exception:

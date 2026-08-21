@@ -110,16 +110,16 @@ def _subset_metrics(matrix: np.ndarray, subset: dict[str, Any]) -> dict[str, Any
     result = _aggregate(matrix)
     supported, unsupported = subset["supported"], subset["unsupported"]
     s_f1 = float(np.mean([result["per_class_f1"][name] for name in supported]))
-    u_f1 = float(np.mean([result["per_class_f1"][name] for name in unsupported]))
+    u_f1 = float(np.mean([result["per_class_f1"][name] for name in unsupported])) if unsupported else float("nan")
     s_iou = float(np.mean([result["per_class_iou"][name] for name in supported]))
-    u_iou = float(np.mean([result["per_class_iou"][name] for name in unsupported]))
+    u_iou = float(np.mean([result["per_class_iou"][name] for name in unsupported])) if unsupported else float("nan")
     result.update({
         "S_F1": s_f1,
         "U_F1": u_f1,
-        "H_F1": 2 * s_f1 * u_f1 / (s_f1 + u_f1) if s_f1 + u_f1 else 0.0,
+        "H_F1": 2 * s_f1 * u_f1 / (s_f1 + u_f1) if np.isfinite(u_f1) and s_f1 + u_f1 else float("nan"),
         "S_IoU": s_iou,
         "U_IoU": u_iou,
-        "H_IoU": 2 * s_iou * u_iou / (s_iou + u_iou) if s_iou + u_iou else 0.0,
+        "H_IoU": 2 * s_iou * u_iou / (s_iou + u_iou) if np.isfinite(u_iou) and s_iou + u_iou else float("nan"),
     })
     return result
 

@@ -1,0 +1,20 @@
+experiment:
+  name: ctp_v1_1_tuning_candidate
+  overwrite: false
+
+# Deployment must replace only the null paths with development-only inputs.
+# The runner rejects test-labelled paths/IDs and never discovers areas itself.
+paths:
+  protocol_file: configs/ctp_v1_1_tuning_protocol.json
+  development_manifest: null
+  feature_cache: null
+  candidate_dir: null
+  image_dir: null
+  openai_clip_checkpoint: null
+  label_dir: null
+  output_root: outputs/ctp_tuning_v1_1
+
+development:
+  area_ids: [1, 3, 5, 7, 13, 17, 21, 23, 26, 32, 37]
+
+# No alpha/tau override is accepted here. Both grids are canonical protocol data.

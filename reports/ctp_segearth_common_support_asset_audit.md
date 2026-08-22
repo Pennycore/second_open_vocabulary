@@ -1,7 +1,7 @@
 # CTP-v1 / SegEarth-OV Vaihingen common-support asset audit
 
 Date: 2026-08-22
-Status: **RECOVERED / PRE-EVALUATION HASH GATE PASSED**
+Status: **RECOVERED / EVALUATED AFTER HASH GATE**
 
 > Historical record: this audit initially stopped because the formal CTP maps
 > were absent from the working tree and active 3090 storage.  The original
@@ -112,3 +112,7 @@ The prior source-asset block is resolved.  A bounded offline evaluator may now
 run only after repeating all listed source hashes, and only against the
 recovered CTP bytes, sealed SegEarth maps, frozen Omega masks, and registered
 Vaihingen GT.  It must not run inference or write/reconstruct semantic maps.
+
+That evaluator completed once in a fresh output run after this gate.  Its
+metrics, post-score source re-hash attestation, and external-protocol limits
+are reported in `reports/segearth_ctp_vaihingen_common_support_final.md`.

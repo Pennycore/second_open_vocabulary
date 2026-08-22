@@ -1,6 +1,6 @@
 # SegEarth-OV / CTP-v1 Vaihingen frozen common-support comparison
 
-Date: 2026-08-22  
+Date: 2026-08-22
 Status: completed offline evaluation; external-protocol comparison only
 
 ## A. Asset audit

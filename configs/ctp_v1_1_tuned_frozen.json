@@ -1,0 +1,62 @@
+{
+  "format_version": 1,
+  "name": "CTP-v1.1-tuned",
+  "status": "frozen_development_only_pending_final_test",
+  "scope": "Post-hoc development-only optimization of two pre-registered existing protocol parameters; no registered-test evaluation has been run for this configuration.",
+  "method_identity": {
+    "base_method": "CTP-v1-untuned",
+    "formula": "unchanged",
+    "SCC": "unchanged",
+    "Guard": "unchanged",
+    "prompts": "unchanged",
+    "visual_prototype_construction": "unchanged",
+    "FusionCanvas": "unchanged except for the registered global conflict threshold"
+  },
+  "selected_parameters": {
+    "alpha": 0.5,
+    "tau_conflict": 0.03,
+    "parameter_change_from_ctp_v1_untuned": false
+  },
+  "selection": {
+    "selection_rule": "Among feasible grid cells, maximize full development mIoU; for full-mIoU differences below 0.001, maximize partial mean H-IoU, then partial mean U-IoU, then minimize abstention, then minimize distance to (0.5, 0.03).",
+    "feasible": true,
+    "collapse_subset_count": 0,
+    "full_mIoU": 0.41999849322575217,
+    "partial_mean_H_IoU": 0.14479417086838733,
+    "abstention_ratio": 0.1162064099832935,
+    "baseline_parameters": {"alpha": 0.5, "tau_conflict": 0.03},
+    "selection_outcome": "The selected development configuration equals the preserved CTP-v1-untuned baseline."
+  },
+  "development_protocol": {
+    "development_area_ids": [1, 3, 5, 7, 13, 17, 21, 23, 26, 32, 37],
+    "registered_test_area_ids": [11, 15, 28, 30, 34],
+    "grid": {
+      "alpha": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+      "tau_conflict": [0.0, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03],
+      "cells": 49
+    },
+    "partial_support": {"subset_sizes": [2, 3, 4], "all_lexicographic_subsets": 25, "result_rows": 1225},
+    "protocol_sha256": "cc6ad09029e229713b1882dd07c9a4b327b00d587eefdaf4f53e84723060ecbc"
+  },
+  "provenance": {
+    "recorded_code_commit": "63ac207ec00af7081dc5f60f2c6baa5fac3c9bdd",
+    "source_prediction_manifest_sha256": "41c2e099d40ae2e95fe6f76d52318bc0aabbccaa33df11899c1860c1c4af199a",
+    "development_evaluation_manifest_sha256": "3f76cee29dd501ffd9be1c5809dd7e6fd6729ca03ad942570dd7348e75e72fa6",
+    "tuned_candidate_sha256": "45e8e367f4434706f1664bea9ada30666b72972508d8996ec71f8a8a786d80af",
+    "completed_csv_sha256": {
+      "grid_search_full.csv": "e9b0963c633898ad1355e5da65e2c6accee5e03bad5b69a1dc3d292357a3f181",
+      "partial_all_subsets.csv": "60de0657cd9ef3709e9f02e0c6cb3e8505ce06a155c8e3ddd7159fab14b4128a",
+      "full_support_accounting.csv": "d4097d735071ebcd485a93398aaae4d73ab088fd7dbf8f8b4fbf89aa2f542345",
+      "full_support_per_class.csv": "d69194c13694b1b186a047abefc54ba074d21fd15259a15c9b9e4bfb79712dac"
+    }
+  },
+  "evaluation_boundary": {
+    "prediction_manifest": "sealed before development GT evaluation",
+    "development_evaluation_manifest": "post-hoc metadata finalization bound to the completed CSV tables and sealed prediction manifest",
+    "registered_test_evaluation": false,
+    "inference_rerun": false,
+    "model_rerun": false,
+    "grid_rerun": false,
+    "prohibited_until_explicit_final_test_authorization": ["Vaihingen registered-test evaluation", "Potsdam evaluation", "RemoteCLIP evaluation", "SegEarth evaluation", "new tuning", "method modification"]
+  }
+}

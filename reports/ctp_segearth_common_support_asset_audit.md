@@ -1,7 +1,13 @@
 # CTP-v1 / SegEarth-OV Vaihingen common-support asset audit
 
 Date: 2026-08-22
-Status: **BLOCKED — do not evaluate**
+Status: **RECOVERED / PRE-EVALUATION HASH GATE PASSED**
+
+> Historical record: this audit initially stopped because the formal CTP maps
+> were absent from the working tree and active 3090 storage.  The original
+> 2080Ti output archive was subsequently located, hash-verified, and used to
+> recover only the original manifest and five already-sealed CTP maps.  This
+> update does not reconstruct predictions or change any frozen source asset.
 
 ## Scope and immutable boundary
 
@@ -52,7 +58,35 @@ five-class order `impervious_surface`, `building`, `low_vegetation`, `tree`,
 | Frozen CTP configuration | `788f1962d497022fbd5cacd7b63eaedddecd0343104aa726ee80afcdf1b37430` |
 
 The manifest lists the expected CTP semantic-map hashes for each of the five
-areas.  However, it does **not** contain the arrays themselves.
+areas.  Its working-tree copy does not contain the arrays themselves.
+
+## Archive recovery after the initial stop
+
+The original archive was recovered from:
+
+`research_archive/artifacts/remote_2080ti_workspace_outputs_20260820.tar.gz`
+
+Its SHA-256 is
+`c39019fe5169aaa74ae66fe1745d154671ec5dfbeabe1da1524c6ca9234590d5`,
+which matches the tracked research-archive checksum registry.  Only these
+members were extracted into the ignored local recovery directory
+`outputs/recovery/ctp_vaihingen_formal_20260822/`:
+
+- `manifest.json` — `b064984cd2a3baf7f70835ec8a8c8d767477066223ad7874ddcbfaeab51b0309`
+- `CTP_vaih_area11_semantic.npz` — `8cf956ba5006b5813f3153727f1392b5581cfdbbabe1a67a14b987648a88bf37`
+- `CTP_vaih_area15_semantic.npz` — `11c2c6e094918d9fa16972925673cfe788f5e0f6d7b3dc7010555e0fa94f8b38`
+- `CTP_vaih_area28_semantic.npz` — `63bc5243e7c0b4203f855f8873621002a97f74d8ecf27e2d2e3fe7b56d22775f`
+- `CTP_vaih_area30_semantic.npz` — `06446ae3b962fdd66bc3382aec0ad9de09cd101f0d0bef59ce341319365cb003`
+- `CTP_vaih_area34_semantic.npz` — `13ecd3e601a6070008f5bd2db0f89eda143e9d91b8dc6e43b0ed6cd05494732e`
+
+Every recovered hash equals the expected hash registered by the formal pixel
+manifest.  These six bytes-for-byte original artifacts were copied to the new,
+ignored 3090 recovery directory:
+
+`/home/zhongsz/second_open_vocabulary/inputs/recovery/ctp_vaihingen_formal_20260822/`
+
+The server recomputation produced the same six SHA-256 values.  No GT was read
+before this local and remote source validation passed.
 
 ## Blocking evidence
 
@@ -74,9 +108,7 @@ explicitly prohibited by this task.
 
 ## Decision
 
-**NO-GO.** Do not create the common-support evaluator, do not open GT, do not
-write metrics/CSV/bootstrap outputs, and do not start inference.  The requested
-comparison can resume only after the original five formal CTP semantic maps and
-their original prediction manifest are recovered intact and their hashes match
-the values declared by the formal pixel manifest.  The existing SegEarth-OV
-assets must remain unchanged while this recovery is pending.
+The prior source-asset block is resolved.  A bounded offline evaluator may now
+run only after repeating all listed source hashes, and only against the
+recovered CTP bytes, sealed SegEarth maps, frozen Omega masks, and registered
+Vaihingen GT.  It must not run inference or write/reconstruct semantic maps.

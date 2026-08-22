@@ -206,12 +206,10 @@ def run(args: argparse.Namespace) -> Path:
                 fixed = scope == "fixed_omega_strict"
                 clutter = int(np.count_nonzero(seg[mask] == 5))
                 ignored = int(np.count_nonzero(seg[mask] == IGNORE))
-                target = fixed_rows if fixed else mutual_rows
-                target.extend([row("CTP-v1", scope, ctp_m, coverage=coverage), row("SegEarth-OV", scope, seg_m, coverage=coverage, clutter=clutter, ignored=ignored)])
                 area_rows.append({"area": area, "image_id": image_id, "scope": scope, "omega_pixels": int(omega.sum()), "evaluated_pixels": int(mask.sum()), "coverage_of_fixed_omega": coverage, "SegEarth_OA": seg_m["OA"], "CTP_OA": ctp_m["OA"], "Delta_OA_CTP_minus_SegEarth": ctp_m["OA"] - seg_m["OA"], "SegEarth_Macro_F1": seg_m["Macro_F1"], "CTP_Macro_F1": ctp_m["Macro_F1"], "Delta_Macro_F1_CTP_minus_SegEarth": ctp_m["Macro_F1"] - seg_m["Macro_F1"], "SegEarth_mIoU": seg_m["mIoU"], "CTP_mIoU": ctp_m["mIoU"], "Delta_mIoU_CTP_minus_SegEarth": ctp_m["mIoU"] - seg_m["mIoU"], "CTP_abstention_ratio": ctp_m["ctp_abstention_ratio"], "SegEarth_clutter_predictions": clutter, "SegEarth_ignore_predictions": ignored})
                 for class_name in CLASSES:
                     c, s = ctp_m["per_class"][class_name], seg_m["per_class"][class_name]
-                    class_rows.append({"scope": scope, "class": class_name, "SegEarth_Precision": s["Precision"], "CTP_Precision": c["Precision"], "SegEarth_Recall": s["Recall"], "CTP_Recall": c["Recall"], "SegEarth_F1": s["F1"], "CTP_F1": c["F1"], "SegEarth_IoU": s["IoU"], "CTP_IoU": c["IoU"], "Delta_IoU_CTP_minus_SegEarth": c["IoU"] - s["IoU"]})
+                    class_rows.append({"area": area, "scope": scope, "class": class_name, "SegEarth_Precision": s["Precision"], "CTP_Precision": c["Precision"], "SegEarth_Recall": s["Recall"], "CTP_Recall": c["Recall"], "SegEarth_F1": s["F1"], "CTP_F1": c["F1"], "SegEarth_IoU": s["IoU"], "CTP_IoU": c["IoU"], "Delta_IoU_CTP_minus_SegEarth": c["IoU"] - s["IoU"]})
         def total(items: dict[int, Any]) -> Any:
             first = items[TEST_AREAS[0]]
             result = type(first)(np.zeros_like(first.confusion), np.zeros_like(first.fn_extra), 0, 0, 0, 0, 0)
@@ -222,6 +220,10 @@ def run(args: argparse.Namespace) -> Path:
         fixed_rows.extend([row("CTP-v1", "fixed_omega_strict", fixed_ctp_m, coverage=1.0), row("SegEarth-OV", "fixed_omega_strict", fixed_seg_m, coverage=1.0)])
         mutual_coverage = float(mutual_ctp_m["denominator"] / fixed_ctp_m["denominator"])
         mutual_rows.extend([row("CTP-v1", "mutual_valid_diagnostic", mutual_ctp_m, coverage=mutual_coverage), row("SegEarth-OV", "mutual_valid_diagnostic", mutual_seg_m, coverage=mutual_coverage)])
+        for scope, ctp_m, seg_m in (("fixed_omega_strict", fixed_ctp_m, fixed_seg_m), ("mutual_valid_diagnostic", mutual_ctp_m, mutual_seg_m)):
+            for class_name in CLASSES:
+                c, s = ctp_m["per_class"][class_name], seg_m["per_class"][class_name]
+                class_rows.append({"area": "all", "scope": scope, "class": class_name, "SegEarth_Precision": s["Precision"], "CTP_Precision": c["Precision"], "SegEarth_Recall": s["Recall"], "CTP_Recall": c["Recall"], "SegEarth_F1": s["F1"], "CTP_F1": c["F1"], "SegEarth_IoU": s["IoU"], "CTP_IoU": c["IoU"], "Delta_IoU_CTP_minus_SegEarth": c["IoU"] - s["IoU"]})
         bootstrap = bootstrap_area_deltas(fixed_ctp, fixed_seg, seed=args.bootstrap_seed, repeats=args.bootstrap_repeats)
         write_csv_exclusive(run_dir / "segearth_ctp_fixed_support_metrics.csv", fixed_rows)
         write_csv_exclusive(run_dir / "segearth_ctp_mutual_valid_metrics.csv", mutual_rows)
